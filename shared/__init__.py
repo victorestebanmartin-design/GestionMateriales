@@ -1,0 +1,1 @@
+# Módulo compartido para funciones comunes entre aplicaciones

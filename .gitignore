@@ -1,0 +1,54 @@
+# Bases de datos (NO subir - datos sensibles)
+*.db
+*.sqlite
+*.sqlite3
+database/*.db
+
+# Entornos virtuales Python
+venv/
+env/
+ENV/
+python_portable/
+GestionMateriales_Portable/python/
+GESTMATAPP PORT/
+
+# Carpetas portables completas (son distribuciones, no código fuente)
+GestionMateriales_Portable/
+GESTMATAPP PORT/
+TEMP_GESTION/
+
+# Paquetes offline (son binarios grandes)
+offline_packages/
+offline_packages_new/
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Carpetas de distribución
+build/
+dist/
+*.egg-info/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistema operativo
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Logs
+*.log
+
+# Archivos temporales
+*.tmp
+*.bak
+*.backup

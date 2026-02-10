@@ -773,9 +773,20 @@ def api_materiales():
         label = estado_label(m.caducidad, m.operario_numero, m.estado)
         asignado_at_formatted = "-"
         if m.fecha_asignacion and m.operario_numero:
-            # Formateo legible para la hora de asignación (DD/MM/YYYY HH:MM:SS)
-            dt = datetime.strptime(m.fecha_asignacion, "%Y-%m-%d %H:%M:%S")
-            asignado_at_formatted = dt.strftime("%d/%m/%Y %H:%M:%S")
+          # Aceptar varios formatos de fecha existentes en BD
+          dt = None
+          for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M:%S.%f"):
+            try:
+              dt = datetime.strptime(m.fecha_asignacion, fmt)
+              break
+            except ValueError:
+              pass
+          if dt is None:
+            try:
+              dt = datetime.fromisoformat(m.fecha_asignacion.replace("Z", "+00:00"))
+            except ValueError:
+              dt = None
+          asignado_at_formatted = dt.strftime("%d/%m/%Y %H:%M:%S") if dt else str(m.fecha_asignacion)
         
         # Determinar estado crítico para materiales en uso
         estado_critico = None

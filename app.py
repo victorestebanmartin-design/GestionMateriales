@@ -704,6 +704,46 @@ def badge_html(label: str)->str:
 # ================== Init ==================
 init_db()
 
+# ================== PWA: Manifest e iconos ==================
+@app.route('/manifest.json')
+def pwa_manifest():
+    manifest = {
+        "name": "Gestión de Materiales",
+        "short_name": "GestMat",
+        "description": "Sistema de gestión de materiales y herramientas",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#f8f9fa",
+        "theme_color": "#1a73e8",
+        "icons": [
+            {
+                "src": "/static/icons/icon-192.png",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any maskable"
+            },
+            {
+                "src": "/static/icons/icon-512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any maskable"
+            }
+        ]
+    }
+    from flask import json as flask_json
+    response = app.response_class(
+        response=flask_json.dumps(manifest),
+        mimetype='application/manifest+json'
+    )
+    return response
+
+@app.route('/favicon.ico')
+def favicon():
+    icon_path = os.path.join(BASE_DIR, 'static', 'icons', 'icon-192.png')
+    if os.path.exists(icon_path):
+        return send_file(icon_path, mimetype='image/png')
+    return '', 204
+
 # ================== API auxiliar ==================
 @app.get("/api/desc_por_ean")
 def api_desc_por_ean():
@@ -3164,6 +3204,10 @@ def tpl_home():
     return """
 <!doctype html><html><head><meta charset="utf-8"><title>Gestión de Materiales</title>
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1a73e8">
+<link rel="icon" type="image/png" href="/static/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/static/icons/icon-192.png">
 <style>
 :root{
   --bg:#f8f9fa; --card:#fff; --shadow:0 2px 10px rgba(0,0,0,.08);

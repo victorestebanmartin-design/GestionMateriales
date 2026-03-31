@@ -12,6 +12,22 @@ echo.
 echo Instalando todo lo necesario, por favor espera...
 echo.
 
+:: ── WebView2 Runtime (necesario para la ventana nativa) ─────────────────────
+echo [0/4] Comprobando WebView2 Runtime...
+reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" >nul 2>&1
+if %errorlevel% equ 0 goto webview2_ok
+reg query "HKLM\SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" >nul 2>&1
+if %errorlevel% equ 0 goto webview2_ok
+reg query "HKCU\SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" >nul 2>&1
+if %errorlevel% equ 0 goto webview2_ok
+
+echo WebView2 Runtime NO encontrado. Descargando e instalando...
+powershell -NoProfile -Command "try { $f='%TEMP%\webview2setup.exe'; Invoke-WebRequest -Uri 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile $f -UseBasicParsing; Start-Process $f -ArgumentList '/silent /install' -Wait; Write-Host 'WebView2 instalado correctamente.' } catch { Write-Host 'Aviso: no se pudo instalar WebView2 automaticamente. Descargalo desde https://developer.microsoft.com/es-es/microsoft-edge/webview2/' }"
+
+:webview2_ok
+echo WebView2 Runtime verificado.
+echo.
+
 :: Verificar winget
 winget --version >nul 2>&1
 if %errorlevel% neq 0 (

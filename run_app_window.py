@@ -2,6 +2,50 @@
 Ejecuta la aplicación de Gestión de Materiales en una ventana nativa
 sin barra de navegador - Modo maximizado con botones flotantes
 """
+import sys
+import platform
+import subprocess
+
+def _check_webview2():
+    """Comprueba si WebView2 Runtime está instalado y lo instala si falta."""
+    if platform.system() != "Windows":
+        return
+    try:
+        import winreg
+        claves = [
+            r"SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
+            r"SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
+        ]
+        for hive in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
+            for clave in claves:
+                try:
+                    with winreg.OpenKey(hive, clave):
+                        return  # encontrado
+                except FileNotFoundError:
+                    pass
+        # No encontrado — intentar instalar automáticamente
+        print("WebView2 Runtime no encontrado. Instalando automáticamente...")
+        import urllib.request, tempfile, os
+        url = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
+        installer = os.path.join(tempfile.gettempdir(), "MicrosoftEdgeWebview2Setup.exe")
+        try:
+            urllib.request.urlretrieve(url, installer)
+            result = subprocess.run([installer, "/silent", "/install"])
+            if result.returncode == 0:
+                print("WebView2 Runtime instalado correctamente.")
+            else:
+                print(f"Instalador devolvió código {result.returncode} (puede que ya estuviera instalado).")
+        except Exception as e:
+            print(f"\n[ERROR] No se pudo instalar WebView2 automáticamente: {e}")
+            print("Por favor, descárgalo manualmente desde:")
+            print("  https://developer.microsoft.com/es-es/microsoft-edge/webview2/")
+            input("\nPulsa ENTER para salir...")
+            sys.exit(1)
+    except ImportError:
+        pass  # No Windows
+
+_check_webview2()
+
 import webview
 import threading
 import time

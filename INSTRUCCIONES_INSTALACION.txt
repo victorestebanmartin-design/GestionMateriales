@@ -1,0 +1,66 @@
+╔══════════════════════════════════════════════════════════════╗
+║          GESTIÓN DE MATERIALES — GUÍA DE INSTALACIÓN         ║
+╚══════════════════════════════════════════════════════════════╝
+
+Sigue estos pasos en orden. Solo tienes que hacerlo una vez.
+
+──────────────────────────────────────────────────────────────
+PASO 1 — Descarga el instalador automático
+──────────────────────────────────────────────────────────────
+
+Abre este enlace en tu navegador y guarda el archivo:
+
+  https://raw.githubusercontent.com/victorestebanmartin-design/GestionMateriales/main/INSTALAR.bat
+
+  (Clic derecho en la página → "Guardar como..." → guárdalo
+   en el Escritorio como INSTALAR.bat)
+
+
+──────────────────────────────────────────────────────────────
+PASO 2 — Ejecuta el instalador
+──────────────────────────────────────────────────────────────
+
+  1. Busca el archivo INSTALAR.bat en el Escritorio
+  2. Clic derecho → "Ejecutar como administrador"
+  3. Si Windows pregunta "¿Deseas permitir...?" → pulsa SÍ
+  4. Espera unos minutos mientras se instala todo automáticamente
+
+  El instalador descarga e instala todo lo necesario:
+  Python, Git, la aplicación y sus dependencias.
+
+
+──────────────────────────────────────────────────────────────
+PASO 3 — Abrir la aplicación
+──────────────────────────────────────────────────────────────
+
+  Cuando termine la instalación, encontrarás una carpeta
+  llamada "GestionMateriales" en el mismo sitio donde
+  ejecutaste el instalador.
+
+  Para abrir la app: doble clic en
+  → GestionMateriales\start.bat
+
+
+──────────────────────────────────────────────────────────────
+ACCESO A LA APLICACIÓN
+──────────────────────────────────────────────────────────────
+
+  Número de acceso según tu rol:
+
+  Administrador : 999999  o  US4281
+  Almacenero    : US272   o  US25013
+  Operario      : Usar tu número de tarjeta
+
+  La app también es accesible desde cualquier PC de la red en:
+  http://<IP-del-ordenador-servidor>:5000
+
+
+──────────────────────────────────────────────────────────────
+¿PROBLEMAS?
+──────────────────────────────────────────────────────────────
+
+  • Asegúrate de ejecutar INSTALAR.bat como Administrador
+  • Necesitas conexión a Internet durante la instalación
+  • Compatible con Windows 10 y Windows 11
+
+══════════════════════════════════════════════════════════════

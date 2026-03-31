@@ -89,10 +89,21 @@ def get_db():
         yield conn
 
 def init_db():
-    """Inicializar ambas bases de datos"""
-    # Base de datos ya creadas por el script de migración, solo verificamos que existan
-    # Crear tabla ean_descriptions si no existe
-    with get_db() as conn:
+    """Inicializar ambas bases de datos creando tablas y operarios por defecto si no existen."""
+    # ── materiales.db ──────────────────────────────────────────────
+    with get_db_materiales() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS materiales (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                codigo TEXT UNIQUE NOT NULL,
+                caducidad TEXT,
+                estado TEXT DEFAULT 'precintado',
+                operario_numero TEXT,
+                ean TEXT,
+                descripcion TEXT,
+                fecha_asignacion TEXT
+            )
+        """)
         conn.execute("""
             CREATE TABLE IF NOT EXISTS ean_descriptions (
                 ean TEXT PRIMARY KEY,
@@ -100,6 +111,29 @@ def init_db():
                 fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+    # ── operarios.db ───────────────────────────────────────────────
+    with get_db_operarios() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS operarios (
+                numero TEXT PRIMARY KEY,
+                nombre TEXT NOT NULL,
+                rol TEXT DEFAULT 'operario',
+                activo INTEGER DEFAULT 1
+            )
+        """)
+        # Insertar usuarios por defecto solo si no existen
+        defaults = [
+            ("999999",  "Administrador",    "admin"),
+            ("US4281",  "Administrador 2",  "admin"),
+            ("US272",   "Almacenero 1",     "almacenero"),
+            ("US25013", "Almacenero 2",     "almacenero"),
+        ]
+        for numero, nombre, rol in defaults:
+            conn.execute("""
+                INSERT OR IGNORE INTO operarios (numero, nombre, rol, activo)
+                VALUES (?, ?, ?, 1)
+            """, (numero, nombre, rol))
 
 def row_to_material(r)->Material:
     return Material(**dict(r))

@@ -1,4 +1,6 @@
 @echo off
+:: Ir siempre a la carpeta donde esta este .bat (aunque se ejecute como admin desde System32)
+cd /d "%~dp0"
 title Instalador - Gestion de Materiales
 color 0A
 

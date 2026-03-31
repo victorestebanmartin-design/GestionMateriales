@@ -174,7 +174,22 @@ def main():
         window.maximize()
         window.evaluate_js(BOTONES_FLOTANTES_JS)
 
+    # Hilo que espera la señal de reinicio y cierra la ventana limpiamente
+    def _monitor_restart():
+        from app import _restart_event
+        _restart_event.wait()          # bloquea hasta que admin pulse "Reiniciar"
+        window.destroy()               # cierra la ventana de forma limpia
+
+    threading.Thread(target=_monitor_restart, daemon=True).start()
+
     webview.start(on_loaded)
+
+    # Si llegamos aquí porque se solicitó reinicio → salir con código 42
+    # start.bat detecta el 42, espera 2s y relanza run_app_window.py
+    from app import _restart_event
+    if _restart_event.is_set():
+        print("Reinicio solicitado — saliendo con código 42")
+        sys.exit(42)
 
     print("\nAplicacion cerrada")
 

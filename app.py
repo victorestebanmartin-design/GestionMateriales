@@ -1,6 +1,6 @@
 # Aplicación de materiales - versión corregida
 from flask import Flask, render_template_string, request, redirect, url_for, flash, jsonify, abort, send_file, make_response, session
-import sqlite3, os, csv, io, logging, re
+import sqlite3, os, csv, io, logging, re, threading
 from datetime import date, datetime, timedelta
 from contextlib import contextmanager
 from typing import Optional, List
@@ -35,6 +35,9 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DB_MATERIALES = os.path.join(BASE_DIR, "database", "materiales.db")
 DB_OPERARIOS = os.path.join(BASE_DIR, "database", "operarios.db")
 AVISO_DIAS = 7
+
+# Evento para reinicio limpio desde el admin (lo escucha run_app_window.py)
+_restart_event = threading.Event()
 
 # Roles y credenciales por defecto (cámbialas por variables de entorno)
 ADMIN_PASSWORD      = os.environ.get("ADMIN_PASSWORD", "admin123")
@@ -3242,12 +3245,11 @@ def tpl_home():
 <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
 <style>
 :root{
-  --bg:#0f172a; --card:#1e293b; --shadow:0 2px 10px rgba(0,0,0,.4);
-  --btn:#3b82f6; --btnh:#2563eb; --ok:#22c55e; --warn:#f59e0b; --err:#ef4444;
-  --text:#e2e8f0; --text-muted:#94a3b8; --border:#334155;
+  --bg:#f8f9fa; --card:#fff; --shadow:0 2px 10px rgba(0,0,0,.08);
+  --btn:#1a73e8; --btnh:#1558b0; --ok:#2e7d32; --warn:#c39200; --err:#c62828;
 }
 *{box-sizing:border-box}
-body{font-family:Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:16px;background:var(--bg);color:var(--text)}
+body{font-family:Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:16px;background:var(--bg)}
 .container{max-width:1200px;margin:0 auto;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:16px}
 h1{margin:8px 0 12px;text-align:center}
 .tag{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef3ff;margin:6px 6px 0 0}
@@ -4630,15 +4632,16 @@ def api_admin_restart():
     if current_role() != "admin":
         return jsonify({"success": False, "mensaje": "Acceso denegado"}), 403
 
-    import threading, sys as _sys
-    def _do_restart():
-        import time, os as _os
+    # Señalamos a run_app_window.py que cierre la ventana de forma limpia.
+    # El hilo monitor en run_app_window.py llama window.destroy() tras 1.5s,
+    # webview.start() retorna, y main() hace sys.exit(42).
+    # start.bat detecta el código 42 y relanza el proceso sin conflicto de puerto.
+    def _set_flag():
+        import time
         time.sleep(1.5)
-        # Salir con código 42: start.bat detecta este código y relanza el proceso.
-        # Esto libera el puerto correctamente antes de que el nuevo proceso arranque.
-        _os._exit(42)
+        _restart_event.set()
 
-    threading.Thread(target=_do_restart, daemon=True).start()
+    threading.Thread(target=_set_flag, daemon=True).start()
     return jsonify({"success": True, "mensaje": "Reiniciando en 1.5 segundos…"})
 
 

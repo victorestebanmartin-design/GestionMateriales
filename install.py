@@ -22,13 +22,58 @@ def step(n, total, text):
     print(f"\n[{n}/{total}] {text}")
 
 def ok(text):
-    print(f"  ✔  {text}")
+    print(f"  v  {text}")
 
 def error(text):
-    print(f"  ✖  {text}")
+    print(f"  X  {text}")
 
 def warn(text):
-    print(f"  ⚠  {text}")
+    print(f"  !  {text}")
+
+def webview2_instalado():
+    """Comprueba si WebView2 Runtime está instalado (solo Windows)."""
+    try:
+        import winreg
+        claves = [
+            r"SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
+            r"SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
+        ]
+        for clave in claves:
+            try:
+                with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, clave):
+                    return True
+            except FileNotFoundError:
+                pass
+        # También comprobar en HKCU
+        for clave in claves:
+            try:
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, clave):
+                    return True
+            except FileNotFoundError:
+                pass
+        return False
+    except ImportError:
+        return True  # No Windows, no aplica
+
+def instalar_webview2():
+    """Descarga e instala WebView2 Runtime de forma silenciosa."""
+    import urllib.request
+    import tempfile
+    url = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
+    installer = os.path.join(tempfile.gettempdir(), "MicrosoftEdgeWebview2Setup.exe")
+    print("  Descargando WebView2 Runtime (~2 MB)…")
+    try:
+        urllib.request.urlretrieve(url, installer)
+        print("  Instalando (modo silencioso)…")
+        result = subprocess.run([installer, "/silent", "/install"])
+        if result.returncode == 0:
+            ok("WebView2 Runtime instalado correctamente.")
+        else:
+            warn(f"El instalador devolvió código {result.returncode}. Puede que ya estuviera instalado.")
+    except Exception as e:
+        warn(f"No se pudo descargar WebView2 automáticamente: {e}")
+        print("  Descárgalo manualmente desde:")
+        print("  https://developer.microsoft.com/es-es/microsoft-edge/webview2/")
 
 # ── Paso 0: verificar versión de Python ──────────────────────────────────────
 header("Instalador – Gestión de Materiales")
@@ -42,9 +87,18 @@ ok(f"Python {sys.version_info.major}.{sys.version_info.minor} — OK")
 IS_WINDOWS = platform.system() == "Windows"
 VENV_PYTHON = os.path.join(VENV_DIR, "Scripts" if IS_WINDOWS else "bin", "python")
 VENV_PIP    = os.path.join(VENV_DIR, "Scripts" if IS_WINDOWS else "bin", "pip")
+TOTAL = 5
+
+# ── Paso 0b: WebView2 Runtime (solo Windows) ─────────────────────────────────
+if IS_WINDOWS:
+    step("0b", TOTAL, "Comprobando WebView2 Runtime (necesario para la ventana nativa)…")
+    if webview2_instalado():
+        ok("WebView2 Runtime ya está instalado.")
+    else:
+        warn("WebView2 Runtime NO encontrado. Instalando automáticamente…")
+        instalar_webview2()
 
 # ── Paso 1: crear entorno virtual ────────────────────────────────────────────
-TOTAL = 5
 step(1, TOTAL, "Creando entorno virtual (.venv)…")
 if os.path.isdir(VENV_DIR):
     ok(".venv ya existe, se reutiliza.")

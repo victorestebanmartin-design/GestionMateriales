@@ -3039,6 +3039,7 @@ async function actualizarDesdeGitHub() {
 
 async function reiniciarApp() {
   const btn = document.getElementById('btn-restart');
+  const output = document.getElementById('update-output');
   btn.disabled = true;
   btn.textContent = '⏳ Reiniciando…';
   
@@ -3046,9 +3047,31 @@ async function reiniciarApp() {
     await fetch('/api/admin/restart', { method: 'POST' });
   } catch(e) { /* Se espera que la conexión se corte */ }
 
-  // Esperar y recargar
-  document.getElementById('update-output').textContent += '\\n\\nReiniciando servidor… recargando en 4 segundos.';
-  setTimeout(() => { window.location.reload(); }, 4000);
+  output.textContent += '\\n\\nServidor reiniciando… esperando que vuelva.';
+
+  // Sondear hasta que el servidor responda, luego recargar
+  let intentos = 0;
+  const maxIntentos = 30; // hasta ~15 segundos
+  const intervalo = setInterval(async () => {
+    intentos++;
+    try {
+      const r = await fetch('/api/hora_servidor', { cache: 'no-store' });
+      if (r.ok) {
+        clearInterval(intervalo);
+        output.textContent += '\\n✅ Servidor listo — recargando…';
+        setTimeout(() => { window.location.reload(); }, 500);
+      }
+    } catch(e) {
+      output.textContent = output.textContent.replace(/\\.+$/, '') + '.'.repeat(intentos % 4 + 1);
+    }
+    if (intentos >= maxIntentos) {
+      clearInterval(intervalo);
+      output.textContent += '\\n⚠️ Tardando más de lo esperado. Recarga la página manualmente.';
+      btn.textContent = '🔄 Recargar';
+      btn.disabled = false;
+      btn.onclick = () => window.location.reload();
+    }
+  }, 500);
 }
 
 // Cargar contador de materiales escaneados

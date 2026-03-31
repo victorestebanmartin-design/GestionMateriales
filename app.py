@@ -612,7 +612,7 @@ def count_materiales_escaneados():
         c.execute("SELECT COUNT(*) FROM materiales WHERE estado = 'escaneado'")
         return c.fetchone()[0]
 
-def list_materiales_paged(estado_filter: Optional[str], q: str, offset: int, limit: int)->List[Material]:
+def list_materiales_paged(estado_filter: Optional[str], q: str, offset: int, limit: int, operario_filter: str = "")->List[Material]:
     with get_db() as conn:
         c=conn.cursor()
         c.execute("SELECT id,codigo,caducidad,estado,operario_numero,ean,descripcion,fecha_asignacion FROM materiales")
@@ -639,6 +639,7 @@ def list_materiales_paged(estado_filter: Optional[str], q: str, offset: int, lim
         return eg == "precintado" and not (material.operario_numero and str(material.operario_numero).strip())
 
     qn=(q or "").upper().strip()
+    qop=(operario_filter or "").upper().strip()
     filtered=[]
     for m in rows:
         est=estado_calc(m)
@@ -655,6 +656,9 @@ def list_materiales_paged(estado_filter: Optional[str], q: str, offset: int, lim
                 continue
         texto=(f"{m.codigo} {m.ean or ''} {m.descripcion or ''}").upper()
         if qn and qn not in texto: continue
+        if qop:
+            op_display = get_operario_display(m.operario_numero).upper()
+            if qop not in op_display: continue
         filtered.append((m, est))
     filtered.sort(key=lambda t: (sort_key_estado(t[1]), t[0].caducidad, t[0].codigo))
     sliced=filtered[offset: offset+limit]
@@ -726,7 +730,7 @@ def badge_html(label: str)->str:
     }
     bg=colores.get(base,"#e9ecef"); fg=text.get(base,"#495057")
     pchip = " <span style='font-weight:700'>P</span>" if label.startswith("P·") else ""
-    return f"<span style='padding:4px 10px;border-radius:999px;background:{bg};color:{fg};font-weight:600;font-size:.85em'>{base}{pchip}</span>"
+    return f"<span style='padding:4px 10px;border-radius:999px;background:{bg};color:{fg};font-weight:600;font-size:.85em;white-space:nowrap;display:inline-block'>{base}{pchip}</span>"
 
 # Las funciones de roles están definidas arriba en la sección "Manejo de Roles y Autenticación"
 
@@ -831,13 +835,14 @@ def api_check_codigo():
 def api_materiales():
     estado=request.args.get("estado","todos")
     q=request.args.get("q","")
+    operario=request.args.get("operario","")
     try:
         offset=int(request.args.get("offset","0"))
         limit=int(request.args.get("limit","50"))
     except:
         offset=0; limit=50
     datos=[]
-    for m in list_materiales_paged(estado,q,offset,limit):
+    for m in list_materiales_paged(estado,q,offset,limit,operario):
         base = estado_base(m.caducidad, m.operario_numero, m.estado)
         label = estado_label(m.caducidad, m.operario_numero, m.estado)
         asignado_at_formatted = "-"
@@ -879,6 +884,7 @@ def api_materiales():
             "estado_html": badge_html(label),
             "asignado_at": asignado_at_formatted,
             "operario": get_operario_display(m.operario_numero),
+            "operario_numero": m.operario_numero or "",
             "estado_critico": estado_critico,
         })
     return jsonify(datos)
@@ -3584,17 +3590,45 @@ a.btnlink{padding:14px 16px;border-radius:14px;text-decoration:none;background:#
 .alert-success{background:#d4edda;border:1px solid #c3e6cb;color:#155724}
 .alert-error{background:#f8d7da;border:1px solid #f5c6cb;color:#721c24}
 .alert-warning{background:#fff3cd;border:1px solid #ffeeba;color:#856404}
-table{width:100%;border-collapse:collapse;margin-top:12px}
-th,td{padding:10px;border:1px solid #e9ecef}
+table{width:100%;border-collapse:collapse;margin-top:12px;table-layout:fixed}
+th,td{padding:7px 10px;border:1px solid #e9ecef;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
 th{background:#f8f9fa}
-th:nth-child(5),td:nth-child(5){width:85px;white-space:nowrap;font-size:12px}
-th:nth-child(1),td:nth-child(1){width:50px;text-align:center}
-th:nth-child(2),td:nth-child(2){width:90px}
-th:nth-child(3),td:nth-child(3){width:110px}
-th:nth-child(8),td:nth-child(8){width:85px;white-space:nowrap;font-size:12px}
+/* ID: oculto */
+th:nth-child(1),td:nth-child(1){display:none}
+/* Código */
+th:nth-child(2),td:nth-child(2){width:88px}
+/* EAN */
+th:nth-child(3),td:nth-child(3){width:135px;font-size:13px;color:#546e7a}
+/* Descripción: ancho fijo */
+th:nth-child(4),td:nth-child(4){width:220px}
+/* Caducidad */
+th:nth-child(5),td:nth-child(5){width:88px;font-size:12px;color:#546e7a;text-align:center}
+/* Estado */
+th:nth-child(6),td:nth-child(6){width:108px;text-align:center}
+/* Operario: más ancho para nombres completos */
+th:nth-child(7),td:nth-child(7){width:auto}
+/* Asignado: más ancho para la fecha completa */
+th:nth-child(8),td:nth-child(8){width:155px;font-size:12px;color:#78909c;text-align:center}
 .row-green{background:#f6fff2}
 .row-amber{background:#fffbea}
 .row-red{background:#fff1f0}
+
+/* Operario clickable */
+.op-link{background:none;border:none;color:#1565c0;cursor:pointer;font-size:inherit;padding:2px 4px;border-radius:4px;text-decoration:underline;text-align:left;display:inline-block}
+.op-link:hover{background:#e3f2fd;color:#0d47a1}
+
+/* Descripción clickable */
+.desc-link{background:none;border:none;color:#2e7d32;cursor:pointer;font-size:inherit;padding:2px 4px;border-radius:4px;text-align:left;display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.desc-link:hover{background:#e8f5e9;color:#1b5e20;text-decoration:underline}
+
+/* Filtro activo pills */
+.filtro-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+#filtro-op-pill,#filtro-desc-pill{display:none;align-items:center;gap:8px;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:600;width:fit-content}
+#filtro-op-pill{background:#e3f2fd;border:1px solid #90caf9;color:#1565c0}
+#filtro-desc-pill{background:#e8f5e9;border:1px solid #a5d6a7;color:#2e7d32}
+#filtro-op-pill button,#filtro-desc-pill button{background:none;border:none;font-size:16px;cursor:pointer;line-height:1;padding:0 2px}
+#filtro-op-pill button:hover,#filtro-desc-pill button:hover{color:#c62828}
+
 
 /* Modales */
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:1000}
@@ -3722,10 +3756,17 @@ th:nth-child(8),td:nth-child(8){width:85px;white-space:nowrap;font-size:12px}
         <option value="{{opt}}">{{opt}}</option>
       {% endfor %}
     </select>
+    <label>Operario:</label>
+    <input type="text" id="f_operario" placeholder="Nº o nombre de operario" style="width:180px">
     <label>Buscar:</label>
-    <input type="text" id="f_q" placeholder="Código interno, EAN o descripción">
+    <input type="text" id="f_q" placeholder="Código, EAN o descripción" style="width:200px">
     <button type="button" class="btn" id="btnFiltrar">🔍 Filtrar</button>
+    <button type="button" class="btn" id="btnLimpiar" style="background:#6c757d">✖ Limpiar</button>
   </form>
+  <div class="filtro-pills">
+    <div id="filtro-op-pill">👷 Operario: <strong id="filtro-op-texto"></strong><button onclick="limpiarFiltroOperario()" title="Quitar filtro">×</button></div>
+    <div id="filtro-desc-pill">📦 Producto: <strong id="filtro-desc-texto"></strong><button onclick="limpiarFiltroDesc()" title="Quitar filtro">×</button></div>
+  </div>
 
   <!-- Tabla con scroll infinito -->
   <table>
@@ -3817,6 +3858,7 @@ th:nth-child(8),td:nth-child(8){width:85px;white-space:nowrap;font-size:12px}
     </form>
   </div>
 </div>
+
 
 <script>
 // ====== helpers modal ======
@@ -4369,12 +4411,13 @@ let offset=0, loading=false, done=false;
 const bodyT=document.getElementById('body');
 const estadoSel=document.getElementById('f_estado');
 const qInp=document.getElementById('f_q');
+const opInp=document.getElementById('f_operario');
 
 async function loadMore(){
   if(loading||done) return; loading=true;
-  const res=await fetch(`/api/materiales?estado=${encodeURIComponent(estadoSel.value)}&q=${encodeURIComponent(qInp.value)}&offset=${offset}&limit=50`);
+  const res=await fetch(`/api/materiales?estado=${encodeURIComponent(estadoSel.value)}&q=${encodeURIComponent(qInp.value)}&operario=${encodeURIComponent(opInp.value)}&offset=${offset}&limit=50`);
   const data=await res.json();
-  if(data.length===0){ done=true; return; }
+  if(data.length===0){ done=true; loading=false; return; }
   for(const m of data){
     const tr=document.createElement('tr');
     if(m.estado==='disponible') tr.className='row-green';
@@ -4388,15 +4431,64 @@ async function loadMore(){
         tr.className='row-critical-amber';
     }
     
-    tr.innerHTML=`<td>${m.id}</td><td>${m.codigo}</td><td>${m.ean}</td><td>${m.descripcion}</td><td>${m.caducidad}</td><td>${m.estado_html}</td><td>${m.operario}</td><td>${m.asignado_at}</td>`;
+    // Celda de operario: clickable si tiene operario asignado
+    let opCell;
+    if(m.operario_numero){
+      opCell=`<button class="op-link" data-num="${m.operario_numero}" data-display="${m.operario.replace(/"/g,'&quot;')}">${m.operario}</button>`;
+    } else {
+      opCell=m.operario;
+    }
+    // Celda de descripción: siempre clickable
+    const descEsc=m.descripcion.replace(/"/g,'&quot;');
+    const descCell=`<button class="desc-link" data-q="${descEsc}" title="Ver todos con este producto">${m.descripcion}</button>`;
+    
+    tr.innerHTML=`<td>${m.id}</td><td>${m.codigo}</td><td>${m.ean}</td><td>${descCell}</td><td>${m.caducidad}</td><td>${m.estado_html}</td><td>${opCell}</td><td>${m.asignado_at}</td>`;
     bodyT.appendChild(tr);
   }
   offset+=data.length; loading=false;
 }
+
+// Click en operario → filtrar tabla directamente
+bodyT.addEventListener('click', function(e){
+  const btnOp=e.target.closest('.op-link');
+  if(btnOp){
+    opInp.value=btnOp.dataset.num;
+    mostrarPillOperario(btnOp.dataset.display);
+    bodyT.innerHTML=''; offset=0; done=false; loadMore();
+    return;
+  }
+  const btnDesc=e.target.closest('.desc-link');
+  if(btnDesc){
+    qInp.value=btnDesc.dataset.q;
+    mostrarPillDesc(btnDesc.dataset.q);
+    bodyT.innerHTML=''; offset=0; done=false; loadMore();
+  }
+});
+
+function mostrarPillOperario(texto){
+  document.getElementById('filtro-op-texto').textContent=texto;
+  document.getElementById('filtro-op-pill').style.display='flex';
+}
+function limpiarFiltroOperario(){
+  opInp.value='';
+  document.getElementById('filtro-op-pill').style.display='none';
+  bodyT.innerHTML=''; offset=0; done=false; loadMore();
+}
+function mostrarPillDesc(texto){
+  document.getElementById('filtro-desc-texto').textContent=texto;
+  document.getElementById('filtro-desc-pill').style.display='flex';
+}
+function limpiarFiltroDesc(){
+  qInp.value='';
+  document.getElementById('filtro-desc-pill').style.display='none';
+  bodyT.innerHTML=''; offset=0; done=false; loadMore();
+}
+
 const io=new IntersectionObserver((e)=>{ if(e[0].isIntersecting) loadMore(); });
 io.observe(document.getElementById('sentinel'));
 loadMore();
-document.getElementById('btnFiltrar').onclick=()=>{ bodyT.innerHTML=''; offset=0; done=false; loadMore(); };
+document.getElementById('btnFiltrar').onclick=()=>{ if(!opInp.value) document.getElementById('filtro-op-pill').style.display='none'; if(!qInp.value) document.getElementById('filtro-desc-pill').style.display='none'; bodyT.innerHTML=''; offset=0; done=false; loadMore(); };
+document.getElementById('btnLimpiar').onclick=()=>{ estadoSel.value='todos'; qInp.value=''; opInp.value=''; document.getElementById('filtro-op-pill').style.display='none'; document.getElementById('filtro-desc-pill').style.display='none'; bodyT.innerHTML=''; offset=0; done=false; loadMore(); };
 
 document.addEventListener('click', e=>{
   if(e.target.classList.contains('modal-backdrop')) e.target.style.display='none';
@@ -4418,6 +4510,34 @@ document.addEventListener('click', e=>{
 </script>
 </body></html>
 """
+
+@app.get("/api/operario/<numero>/materiales")
+def api_operario_materiales(numero):
+    """Retorna todos los materiales actualmente asignados a un operario."""
+    with get_db() as conn:
+        c = conn.cursor()
+        c.execute(
+            "SELECT id,codigo,caducidad,estado,operario_numero,ean,descripcion,fecha_asignacion "
+            "FROM materiales WHERE operario_numero=?", (numero,)
+        )
+        rows = [row_to_material(r) for r in c.fetchall()]
+    datos = []
+    for m in rows:
+        base = estado_base(m.caducidad, m.operario_numero, m.estado)
+        if base in ("gastado", "retirado", "escaneado"):
+            continue
+        label = estado_label(m.caducidad, m.operario_numero, m.estado)
+        datos.append({
+            "id": m.id,
+            "codigo": m.codigo,
+            "ean": m.ean or "-",
+            "descripcion": m.descripcion or "-",
+            "caducidad": m.caducidad,
+            "estado": base,
+            "estado_html": badge_html(label),
+        })
+    nombre = get_operario_nombre(numero) or numero
+    return jsonify({"materiales": datos, "numero": numero, "nombre": nombre})
 
 @app.get("/api/hora_servidor")
 def api_hora_servidor():

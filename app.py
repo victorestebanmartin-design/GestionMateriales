@@ -2305,7 +2305,7 @@ def tpl_admin():
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
 *{box-sizing:border-box}
-body{font-family:'Segoe UI',system-ui,sans-serif;margin:0;background:#f1f5f9;color:#1e293b;min-height:100vh}
+body{font-family:'Segoe UI',system-ui,sans-serif;margin:0;background:#0f172a;color:#e2e8f0;min-height:100vh}
 .topbar{background:#0f172a;color:#fff;padding:0 24px;height:54px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.3)}
 .topbar-logo{font-size:16px;font-weight:700;flex:1;color:#f8fafc;letter-spacing:-.2px}
 .topbar-logo em{color:#60a5fa;font-style:normal}

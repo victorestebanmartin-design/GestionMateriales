@@ -2265,49 +2265,87 @@ cargarSiguiente();
 """
 
 def tpl_admin():
-    return """
-<!doctype html><html><head><meta charset="utf-8"><title>Administrador</title>
+    return """<!doctype html><html lang="es"><head>
+<meta charset="utf-8"><title>Admin – Gestión de Materiales</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-body{font-family:Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:20px;background:#f8f9fa}
-.container{max-width:1000px;margin:0 auto;background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:20px}
-h1{margin:0 0 10px}
-fieldset{border:2px solid #e9ecef;border-radius:10px;margin:14px 0;padding:12px}
-legend{font-weight:700}
-input,button{padding:10px;border:1px solid #ced4da;border-radius:10px}
-button{background:#007bff;color:#fff;border-color:#007bff;cursor:pointer}
-button:hover{background:#0069d9}
-.btn-danger{background:#dc3545;border-color:#dc3545}
-.btn-danger:hover{background:#c82333}
-.alert{padding:10px;border-radius:8px;margin:10px 0}
-.alert-success{background:#d4edda;border:1px solid #c3e6cb;color:#155724}
-.alert-error{background:#f8d7da;border:1px solid #f5c6cb;color:#721c24}
-table{width:100%;border-collapse:collapse;margin-top:10px}
-th,td{padding:8px;border:1px solid #e9ecef;text-align:left}
-th{background:#f8f9fa}
-th:nth-child(5),td:nth-child(5){width:85px;white-space:nowrap;font-size:12px}
-th:nth-child(1),td:nth-child(1){width:50px;text-align:center}
-th:nth-child(2),td:nth-child(2){width:90px}
-th:nth-child(3),td:nth-child(3){width:110px}
-th:nth-child(8),td:nth-child(8){width:85px;white-space:nowrap;font-size:12px}
-a.btn{padding:10px 12px;border-radius:10px;text-decoration:none;background:#eef3ff}
+*{box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;margin:0;background:#f1f5f9;color:#1e293b;min-height:100vh}
+.topbar{background:#0f172a;color:#fff;padding:0 24px;height:54px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.topbar-logo{font-size:16px;font-weight:700;flex:1;color:#f8fafc;letter-spacing:-.2px}
+.topbar-logo em{color:#60a5fa;font-style:normal}
+.topbar a{color:#94a3b8;text-decoration:none;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;transition:background .15s,color .15s}
+.topbar a:hover{background:rgba(255,255,255,.12);color:#f8fafc}
+.page{padding:20px 24px;max-width:1900px;margin:0 auto}
+.alert{padding:12px 16px;border-radius:10px;margin-bottom:16px;font-size:13px}
+.alert-success{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.alert-error{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+.card{background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.07),0 2px 12px rgba(0,0,0,.04);padding:22px;margin-bottom:20px}
+.card-head{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid #f1f5f9;gap:12px}
+.card-title{font-size:15px;font-weight:700;color:#0f172a;display:flex;align-items:center;gap:8px;margin:0;flex-shrink:0}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.tile{background:#fff;border-radius:14px;padding:18px 16px;box-shadow:0 1px 4px rgba(0,0,0,.07);display:flex;flex-direction:column;gap:10px;border-top:3px solid #e2e8f0}
+.tile.amber{border-top-color:#f59e0b}.tile.cyan{border-top-color:#06b6d4}
+.tile.emerald{border-top-color:#10b981}.tile.rose{border-top-color:#f43f5e}
+.tile-title{font-size:13px;font-weight:700;color:#1e293b}
+.tile-desc{font-size:11px;color:#94a3b8;line-height:1.5;flex:1}
+.row2{display:grid;grid-template-columns:3fr 2fr;gap:20px;margin-bottom:20px;align-items:start}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;text-decoration:none;line-height:1.2;transition:filter .12s;white-space:nowrap}
+.btn:hover{filter:brightness(.9)}
+.btn-primary{background:#3b82f6;color:#fff}.btn-success{background:#22c55e;color:#fff}
+.btn-warning{background:#f59e0b;color:#fff}.btn-danger{background:#ef4444;color:#fff}
+.btn-info{background:#06b6d4;color:#fff}.btn-secondary{background:#64748b;color:#fff}
+.btn-ghost{background:#fff;border:1.5px solid #e2e8f0;color:#475569}
+.btn-ghost:hover{background:#f8fafc}
+.btn-sm{padding:6px 12px;font-size:12px}.btn-full{width:100%;justify-content:center}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px}
+.fg input,.fg select{width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit;background:#fafafa;color:#1e293b;transition:border .15s}
+.fg input:focus,.fg select:focus{outline:none;border-color:#3b82f6;background:#fff}
+input[type=file]{padding:5px 8px;background:#fafafa;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;width:100%}
+.info-box{background:#f8fafc;border-left:3px solid #3b82f6;padding:10px 14px;border-radius:0 8px 8px 0;font-size:12px;color:#475569;line-height:1.7;margin-top:8px}
+.info-box.danger{border-left-color:#ef4444;background:#fef2f2;color:#7f1d1d}
+details>summary{cursor:pointer;font-size:12px;color:#3b82f6;font-weight:600;padding:4px 0;user-select:none}
+details[open]>summary{color:#1d4ed8}
+.code-block{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;font-family:monospace;font-size:11px;color:#475569;line-height:1.8;margin-top:8px}
+.table-wrap{border:1px solid #f1f5f9;border-radius:10px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f8fafc;color:#64748b;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;padding:10px 12px;border-bottom:2px solid #e2e8f0;text-align:left;white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #f8fafc;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafcff}
+code{background:#f1f5f9;color:#475569;padding:2px 6px;border-radius:4px;font-family:monospace;font-size:11px}
+.badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600}
+.badge-ok{background:#dcfce7;color:#166534}.badge-warn{background:#fee2e2;color:#991b1b}
+.badge-blue{background:#dbeafe;color:#1e40af}
+.danger-zone{border:1.5px solid #fca5a5;border-radius:10px;background:#fef2f2;padding:18px;margin-top:16px}
+.danger-zone-title{font-size:13px;font-weight:700;color:#991b1b;margin:0 0 8px}
+.gh-card{background:linear-gradient(135deg,#0f172a,#1e3a5f);color:#f8fafc;border-radius:14px;padding:22px;margin-bottom:20px}
+.gh-card p{font-size:12px;color:#94a3b8;margin:6px 0 14px}
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:500}
+.modal-ov .modal-box{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:28px;max-width:500px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-ov .modal-box h3{font-size:16px;font-weight:700;margin:0 0 20px;color:#0f172a}
+hr.div{border:none;border-top:1px solid #f1f5f9;margin:16px 0}
 </style></head><body>
-<div class="container">
-  <h1>⚙️ Administrador</h1>
-  <p><a class="btn" href="{{ url_for('home') }}">← Volver</a> <a class="btn" href="{{ url_for('logout') }}">Cerrar sesión</a></p>
+
+<nav class="topbar">
+  <span class="topbar-logo">⚙️ Panel de <em>Administración</em></span>
+  <a href="{{ url_for('home') }}">← Inicio</a>
+  <a href="{{ url_for('logout') }}">Cerrar sesión</a>
+</nav>
+
+<main class="page">
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}{% for cat,msg in messages %}
       {% if cat == 'error' %}
-        <script>
-          document.addEventListener('DOMContentLoaded', function() {
-            mostrarDialogoError('{{ msg|e }}');
-          });
-        </script>
+        <script>document.addEventListener('DOMContentLoaded',function(){mostrarDialogoError('{{ msg|e }}');});</script>
       {% else %}
         <div class="alert alert-{{ cat }}">{{ msg }}</div>
       {% endif %}
     {% endfor %}{% endif %}
   {% endwith %}
-  
+
   <script>
     function mostrarDialogoError(mensaje) {
         const overlay = document.createElement('div');
@@ -2357,11 +2395,9 @@ a.btn{padding:10px 12px;border-radius:10px;text-decoration:none;background:#eef3
         overlay.appendChild(dialog);
         document.body.appendChild(overlay);
         
-        // Enfocar el botón y añadir evento de teclado
         const button = document.getElementById('error-dialog-btn');
         button.focus();
         
-        // Cerrar con Enter o Escape
         const handleKeydown = (e) => {
             if (e.key === 'Enter' || e.key === 'Escape') {
                 cerrarDialogoError();
@@ -2374,384 +2410,273 @@ a.btn{padding:10px 12px;border-radius:10px;text-decoration:none;background:#eef3
 
     function cerrarDialogoError() {
         const overlay = document.getElementById('error-dialog-overlay');
-        if (overlay) {
-            overlay.remove();
-        }
+        if (overlay) { overlay.remove(); }
     }
   </script>
 
-  <fieldset>
-    <legend>� Gestión Completa de Operarios</legend>
-    
-    <!-- Sección de importación -->
-    <div style="background:#f8f9fa;padding:15px;border-radius:8px;margin-bottom:20px">
-      <h4 style="margin:0 0 15px;color:#495057">📂 Importación Masiva</h4>
-      <form method="POST" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
-        <input type="hidden" name="accion" value="import_operarios">
-        <div style="flex:1;min-width:200px">
-          <label style="display:block;font-size:12px;margin-bottom:5px;font-weight:bold">Archivo CSV/Excel:</label>
-          <input type="file" name="archivo" accept=".csv,.xlsx,.xls" required 
-                 style="width:100%;padding:8px;border:1px solid #ced4da;border-radius:6px">
-        </div>
-        <button type="submit" style="padding:10px 15px;background:#17a2b8;color:#fff;border:none;border-radius:6px">
-          📂 Importar
-        </button>
+  <!-- ════ QUICK TILES ════ -->
+  <div class="tiles">
+    <div class="tile amber">
+      <div class="tile-title">📦 Escanear Bajas</div>
+      <div class="tile-desc">Escanea materiales gastados o retirados con la pistola lectora</div>
+      <a href="/admin/escanear_bajas" class="btn btn-warning btn-full btn-sm">🔍 Iniciar Escaneo</a>
+    </div>
+    <div class="tile cyan">
+      <div class="tile-title">📋 Ver Escaneados</div>
+      <div class="tile-desc" id="count-escaneados">Cargando…</div>
+      <a href="/estado/escaneado" class="btn btn-info btn-full btn-sm">👁️ Ver Lista</a>
+    </div>
+    <div class="tile emerald">
+      <div class="tile-title">📈 Exportar y Limpiar</div>
+      <div class="tile-desc">Exporta gastados/retirados a Excel y los elimina de la BD</div>
+      <form method="POST" onsubmit="return confirm('¿Exportar a Excel y eliminar todos los gastados/retirados?')">
+        <input type="hidden" name="accion" value="export_cleanup">
+        <button type="submit" class="btn btn-success btn-full btn-sm">📥 Exportar + Limpiar</button>
       </form>
-      <details style="margin-top:10px">
-        <summary style="cursor:pointer;font-size:12px;color:#6c757d">ℹ️ Ver formatos soportados</summary>
-        <div style="font-size:11px;color:#6c757d;margin-top:8px;padding:8px;background:#fff;border-radius:4px">
-          <strong>Formatos:</strong> CSV (.csv) o Excel (.xlsx, .xls)<br>
-          <strong>Estructura:</strong> numero | nombre | rol | activo<br>
-          <strong>CSV:</strong> Separado por comas (,) o punto y coma (;)<br>
-          <strong>Excel:</strong> Una fila por operario, columnas A-D<br>
-          <strong>Roles:</strong> operario, almacenero, admin (por defecto: operario)<br>
-          <strong>Activo:</strong> 1/activo/sí (activo) o 0/inactivo/no (inactivo)<br>
-          <strong>Mínimo requerido:</strong> numero y nombre
-        </div>
-      </details>
     </div>
-    
-    <!-- Sección de gestión individual -->
-    <div style="border-top:1px solid #dee2e6;padding-top:20px">
-      <h4 style="margin:0 0 15px;color:#495057">👤 Gestión Individual</h4>
-      <div style="display:flex;gap:10px;margin-bottom:15px;flex-wrap:wrap">
-        <button onclick="mostrarModalCrear()" 
-                style="background:#28a745;border:none;color:#fff;padding:10px 15px;border-radius:6px;cursor:pointer;font-weight:bold">
-          ➕ Crear Nuevo Operario
-        </button>
-        <button onclick="cargarOperarios()" 
-                style="background:#17a2b8;border:none;color:#fff;padding:10px 15px;border-radius:6px;cursor:pointer">
-          🔄 Actualizar Lista
-        </button>
-        <button onclick="exportarOperarios()" 
-                style="background:#ffc107;border:none;color:#212529;padding:10px 15px;border-radius:6px;cursor:pointer">
-          📤 Exportar Lista
-        </button>
-      </div>
-    </div>
-    
-    <!-- Tabla de operarios con carga dinámica -->
-    <div id="tablaOperarios">
-      <div style="text-align:center;padding:20px;color:#666">
-        🔄 Cargando operarios...
-      </div>
-    </div>
-    
-    <p style="font-size:12px;color:#666;margin-top:10px">
-      💡 <strong>Permisos por rol:</strong><br>
-      • <strong>Admin:</strong> Acceso completo + Panel de administración<br>
-      • <strong>Almacenero:</strong> Registrar, devolver, retirar, gastar materiales + asignar<br>  
-      • <strong>Operario:</strong> Solo asignar materiales (sin PIN requerido)
-    </p>
-  </fieldset>
-
-  <fieldset>
-    <legend>📄 Gestión de Materiales</legend>
-    
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:15px;margin-bottom:15px">
-      <!-- Escanear bajas -->
-      <div style="background:#fff3cd;padding:12px;border-radius:8px;border:2px solid #ffc107;display:flex;flex-direction:column">
-        <h5 style="margin:0 0 10px;color:#856404;font-size:13px">📦 Escanear Bajas</h5>
-        <a href="/admin/escanear_bajas" 
-           style="display:block;background:#ffc107;border:none;color:#000;padding:8px 10px;border-radius:6px;font-size:11px;text-align:center;text-decoration:none;font-weight:600;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-          🔍 Iniciar Escaneo
-        </a>
-        <p style="font-size:9px;color:#856404;margin:0;line-height:1.3">Escanea productos gastados/retirados uno a uno</p>
-      </div>
-      
-      <!-- Ver escaneados -->
-      <div style="background:#d1ecf1;padding:12px;border-radius:8px;border:2px solid #17a2b8;display:flex;flex-direction:column">
-        <h5 style="margin:0 0 10px;color:#0c5460;font-size:13px">📋 Ver Escaneados</h5>
-        <a href="/estado/escaneado" 
-           style="display:block;background:#17a2b8;border:none;color:#fff;padding:8px 10px;border-radius:6px;font-size:11px;text-align:center;text-decoration:none;font-weight:600;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-          👁️ Ver Escaneados
-        </a>
-        <p style="font-size:9px;color:#0c5460;margin:0;line-height:1.3" id="count-escaneados">Cargando...</p>
-      </div>
-      
-      <!-- Exportar y limpiar -->
-      <div style="background:#f8f9fa;padding:15px;border-radius:8px">
-        <h5 style="margin:0 0 10px;color:#495057">📈 Exportar y Limpiar</h5>
-        <form method="POST" onsubmit="return confirm('¿Exportar a Excel y eliminar todos los materiales GASTADOS y RETIRADOS de la base de datos?')">
-          <input type="hidden" name="accion" value="export_cleanup">
-          <button class="btn-danger" type="submit" 
-                  style="background:#28a745;border:none;color:#fff;padding:8px 12px;border-radius:6px;font-size:12px;width:100%">
-            📈 Exportar a Excel y eliminar gastados/retirados
-          </button>
-        </form>
-        <p style="font-size:10px;color:#6c757d;margin:8px 0 0">Se exportarán código y descripción de materiales gastados y retirados, luego se eliminarán de la BD.</p>
-      </div>
-      
-      <!-- Borrar material específico -->
-      <div style="background:#f8f9fa;padding:15px;border-radius:8px">
-        <h5 style="margin:0 0 10px;color:#495057">🗑️ Eliminar Material</h5>
-        <form method="POST" onsubmit="return confirm('¿Eliminar el material?')" style="display:flex;gap:8px">
-          <input type="hidden" name="accion" value="delete_material">
-          <input type="text" name="codigo" placeholder="Código 7 dígitos" required 
-                 style="flex:1;padding:8px;border:1px solid #ced4da;border-radius:6px;font-size:12px">
-          <button class="btn-danger" type="submit" 
-                  style="background:#dc3545;border:none;color:#fff;padding:8px 12px;border-radius:6px;font-size:12px">
-            🗑️ Borrar
-          </button>
-        </form>
-      </div>
-    </div>
-  </fieldset>
-
-  <!-- Modal para crear/editar operario -->
-  <div id="modalOperario" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000">
-    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;padding:25px;border-radius:12px;max-width:500px;width:90%;box-shadow:0 4px 20px rgba(0,0,0,0.15)">
-      <h3 style="margin:0 0 20px;color:#333" id="modalTitulo">➕ Crear Nuevo Operario</h3>
-      
-      <form id="formOperario">
-        <div style="margin:15px 0">
-          <label style="display:block;margin-bottom:5px;font-weight:bold;color:#555">Número:</label>
-          <input type="text" id="operarioNumero" required 
-                 style="width:100%;padding:12px;border:2px solid #e9ecef;border-radius:6px;font-size:14px"
-                 placeholder="Ej: 001, 002, US123...">
-          <small style="color:#666;font-size:11px">Identificador único del operario</small>
-        </div>
-        
-        <div style="margin:15px 0">
-          <label style="display:block;margin-bottom:5px;font-weight:bold;color:#555">Nombre completo:</label>
-          <input type="text" id="operarioNombre" required 
-                 style="width:100%;padding:12px;border:2px solid #e9ecef;border-radius:6px;font-size:14px"
-                 placeholder="Nombre y apellidos">
-        </div>
-        
-        <div style="margin:15px 0">
-          <label style="display:block;margin-bottom:5px;font-weight:bold;color:#555">Rol:</label>
-          <select id="operarioRol" required style="width:100%;padding:12px;border:2px solid #e9ecef;border-radius:6px;font-size:14px">
-            <option value="operario">👷 Operario</option>
-            <option value="almacenero">📦 Almacenero</option>
-            <option value="admin">⚙️ Administrador</option>
-          </select>
-        </div>
-        
-        <div id="estadisticasOperario" style="display:none;margin:15px 0;padding:10px;background:#f8f9fa;border-radius:6px">
-          <h5 style="margin:0 0 10px;color:#666">📊 Estadísticas:</h5>
-          <div id="statsContent"></div>
-        </div>
-        
-        <div style="margin:20px 0;text-align:right">
-          <button type="button" onclick="cerrarModal()" 
-                  style="padding:10px 20px;margin-right:10px;background:#6c757d;border:none;border-radius:6px;color:#fff;cursor:pointer">
-            Cancelar
-          </button>
-          <button type="submit" id="btnGuardar"
-                  style="padding:10px 20px;background:#007bff;border:none;border-radius:6px;color:#fff;cursor:pointer">
-            💾 Guardar
-          </button>
-        </div>
+    <div class="tile rose">
+      <div class="tile-title">🗑️ Eliminar Material</div>
+      <div class="tile-desc">Borra un material concreto por código de 7 dígitos</div>
+      <form method="POST" onsubmit="return confirm('¿Eliminar el material?')" style="display:flex;gap:6px">
+        <input type="hidden" name="accion" value="delete_material">
+        <input type="text" name="codigo" placeholder="0000000" maxlength="7" required
+               style="flex:1;padding:6px 8px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:12px;width:0;min-width:0">
+        <button type="submit" class="btn btn-danger btn-sm">Borrar</button>
       </form>
     </div>
   </div>
 
-  <fieldset>
-    <legend>🏷️ Gestión de EANs y Descripciones</legend>
-    <p style="font-size:14px;color:#495057;margin-bottom:15px">
-      Administra las descripciones asociadas a cada EAN para mantener consistencia en la base de datos.
-    </p>
-    
-    {% if eans_data %}
-    <table>
-      <tr>
-        <th>EAN</th>
-        <th>Descripción Principal</th>
-        <th>Materiales</th>
-        <th>Detalles</th>
-        <th>Acción</th>
-      </tr>
-      {% for ean_info in eans_data %}
-      <tr>
-        <td><code>{{ ean_info.ean }}</code></td>
-        <td><strong>{{ ean_info.descripcion_principal }}</strong></td>
-        <td style="text-align:center">{{ ean_info.total_materiales }}</td>
-        <td>
-          {% for desc in ean_info.descripciones %}
-          <div style="font-size:11px;margin:2px 0">
-            • {{ desc.descripcion }} ({{ desc.cantidad }})
+  <!-- ════ 2-COL ROW ════ -->
+  <div class="row2">
+
+    <!-- ─── COL IZQUIERDA: Operarios ─── -->
+    <div class="card">
+      <div class="card-head">
+        <h2 class="card-title">👷 Gestión de Operarios</h2>
+        <div class="btn-row">
+          <button onclick="mostrarModalCrear()" class="btn btn-success btn-sm">➕ Nuevo</button>
+          <button onclick="cargarOperarios()" class="btn btn-ghost btn-sm">🔄</button>
+          <button onclick="exportarOperarios()" class="btn btn-ghost btn-sm">📤 CSV</button>
+        </div>
+      </div>
+
+      <details style="margin-bottom:16px">
+        <summary>📂 Importación masiva desde CSV / Excel</summary>
+        <div style="padding:14px 0 4px">
+          <form method="POST" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+            <input type="hidden" name="accion" value="import_operarios">
+            <div class="fg" style="flex:1;min-width:200px;margin:0">
+              <label>Archivo CSV / Excel</label>
+              <input type="file" name="archivo" accept=".csv,.xlsx,.xls" required>
+            </div>
+            <button type="submit" class="btn btn-info">📂 Importar</button>
+          </form>
+          <div class="info-box">
+            Columnas: <code>numero</code> <code>nombre</code> <code>rol</code> <code>activo</code> ·
+            Roles: operario, almacenero, admin · Activo: 1 / 0
           </div>
-          {% endfor %}
-        </td>
-        <td>
-          {% if ean_info.descripciones|length > 1 %}
-          <span style="color:#dc3545;font-size:11px">⚠️ Inconsistente</span>
-          {% else %}
-          <span style="color:#28a745;font-size:11px">✅ OK</span>
-          {% endif %}
-          <button onclick="editarEAN('{{ ean_info.ean }}', '{{ ean_info.descripcion_principal }}')" 
-                  style="font-size:10px;padding:3px 6px;margin-left:5px">
-            📝 Editar
-          </button>
-        </td>
-      </tr>
-      {% endfor %}
-    </table>
-    
-    <!-- Modal para editar EAN -->
-    <div id="modalEAN" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000">
-      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;padding:20px;border-radius:12px;max-width:500px;width:90%">
-        <h3 style="margin:0 0 15px">📝 Editar Descripción EAN</h3>
+        </div>
+      </details>
+
+      <div id="tablaOperarios">
+        <div style="text-align:center;padding:24px;color:#94a3b8;font-size:14px">🔄 Cargando operarios…</div>
+      </div>
+
+      <hr class="div">
+      <div class="info-box" style="font-size:11px">
+        <strong>Permisos:</strong>
+        <strong>Admin</strong> – acceso total ·
+        <strong>Almacenero</strong> – registrar, asignar, devolver, retirar, gastar ·
+        <strong>Operario</strong> – solo asignar materiales
+      </div>
+    </div><!-- /col izquierda -->
+
+    <!-- ─── COL DERECHA ─── -->
+    <div>
+      <!-- Base de datos materiales -->
+      <div class="card">
+        <div class="card-head">
+          <h2 class="card-title">📊 Base de Datos de Materiales</h2>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:6px">📤 Exportar</div>
+            <p style="font-size:11px;color:#64748b;margin-bottom:8px;line-height:1.4">Descarga todos los materiales en Excel con formato profesional.</p>
+            <a href="/admin/exportar_materiales" class="btn btn-success btn-full btn-sm">⬇️ Descargar Excel (.xlsx)</a>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:6px">📥 Importar</div>
+            <form method="POST" action="/admin/importar_materiales" enctype="multipart/form-data">
+              <div class="fg" style="margin-bottom:6px">
+                <label>Archivo (.xlsx / .csv)</label>
+                <input type="file" name="archivo" accept=".xlsx,.xls,.csv" required>
+              </div>
+              <button type="submit" class="btn btn-primary btn-full btn-sm">⬆️ Subir e Importar</button>
+            </form>
+          </div>
+        </div>
+
+        <details>
+          <summary>📋 Formato de archivos esperado</summary>
+          <div class="code-block">
+            <strong>Columnas (primera fila):</strong><br>
+            Código · EAN · Descripción · Caducidad · Estado · Operario<br><br>
+            Código y Descripción son obligatorios. Caducidad: YYYY-MM-DD.
+          </div>
+        </details>
+
+        <hr class="div">
+
+        <div class="danger-zone">
+          <div class="danger-zone-title">🗑️ Limpiar toda la base de datos</div>
+          <p style="font-size:12px;color:#7f1d1d;margin:0 0 12px;line-height:1.4">
+            ⚠️ Elimina <strong>TODOS</strong> los materiales permanentemente. No se puede deshacer.
+          </p>
+          <form method="POST" action="/admin/borrar_materiales"
+                onsubmit="return confirm('¿Eliminar TODOS los materiales?\\n\\nEsta acción NO SE PUEDE DESHACER.')">
+            <div class="fg" style="margin-bottom:8px">
+              <label style="color:#991b1b">Escribe <code>BORRAR</code> para confirmar</label>
+              <input type="text" name="confirmacion" placeholder="BORRAR" required
+                     style="font-family:monospace;border-color:#fca5a5">
+            </div>
+            <button type="submit" class="btn btn-danger btn-full btn-sm">🗑️ ELIMINAR TODOS LOS MATERIALES</button>
+          </form>
+        </div>
+      </div><!-- /card db -->
+
+      <!-- GitHub Update -->
+      <div class="gh-card">
+        <div class="card-title" style="color:#f8fafc">🔄 Actualización desde GitHub</div>
+        <p>Descarga los últimos cambios y actualiza las dependencias automáticamente.</p>
+        <div class="btn-row">
+          <button id="btn-update" onclick="actualizarDesdeGitHub()" class="btn btn-success">🔄 Actualizar</button>
+          <button id="btn-restart" onclick="reiniciarApp()" style="display:none" class="btn btn-warning">♻️ Reiniciar app</button>
+        </div>
+        <pre id="update-output"
+             style="display:none;margin-top:14px;background:#020617;color:#a3e635;padding:14px;border-radius:8px;font-size:12px;white-space:pre-wrap;max-height:260px;overflow-y:auto;border:1px solid #1e3a5f"></pre>
+      </div><!-- /gh-card -->
+    </div><!-- /col derecha -->
+
+  </div><!-- /row2 -->
+
+  <!-- ════ EAN CATÁLOGO ════ -->
+  <div class="card">
+    <div class="card-head">
+      <h2 class="card-title">🏷️ Catálogo EAN — Descripciones</h2>
+      <span style="font-size:12px;color:#94a3b8">Consistencia de descripciones por código EAN</span>
+    </div>
+
+    {% if eans_data %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>EAN</th><th>Descripción principal</th>
+          <th style="text-align:center">Materiales</th>
+          <th>Variantes</th>
+          <th style="text-align:center">Estado</th>
+          <th style="text-align:center">Acción</th>
+        </tr></thead>
+        <tbody>
+        {% for ean_info in eans_data %}
+        <tr>
+          <td><code>{{ ean_info.ean }}</code></td>
+          <td><strong>{{ ean_info.descripcion_principal }}</strong></td>
+          <td style="text-align:center"><span class="badge badge-blue">{{ ean_info.total_materiales }}</span></td>
+          <td>{% for desc in ean_info.descripciones %}
+            <div style="font-size:11px;color:#64748b">• {{ desc.descripcion }} ({{ desc.cantidad }})</div>
+            {% endfor %}</td>
+          <td style="text-align:center">
+            {% if ean_info.descripciones|length > 1 %}
+              <span class="badge badge-warn">⚠️ Inconsistente</span>
+            {% else %}
+              <span class="badge badge-ok">✅ OK</span>
+            {% endif %}
+          </td>
+          <td style="text-align:center">
+            <button onclick="editarEAN('{{ ean_info.ean }}','{{ ean_info.descripcion_principal }}')"
+                    class="btn btn-ghost btn-sm">📝 Editar</button>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Modal EAN -->
+    <div id="modalEAN" class="modal-ov">
+      <div class="modal-box">
+        <h3>📝 Editar Descripción EAN</h3>
         <form method="POST">
           <input type="hidden" name="accion" value="update_ean_description">
           <input type="hidden" name="ean" id="modal_ean">
-          <div style="margin:10px 0">
-            <label><strong>EAN:</strong></label>
-            <span id="modal_ean_display" style="font-family:monospace;background:#f8f9fa;padding:4px 8px;border-radius:4px"></span>
+          <div class="fg">
+            <label>EAN</label>
+            <code id="modal_ean_display" style="display:block;padding:4px 0;font-size:14px"></code>
           </div>
-          <div style="margin:10px 0">
-            <label><strong>Nueva descripción:</strong></label>
-            <input type="text" name="nueva_descripcion" id="modal_descripcion" required 
-                   style="width:100%;padding:10px;margin:5px 0;border-radius:6px;border:1px solid #ddd">
+          <div class="fg">
+            <label>Nueva descripción</label>
+            <input type="text" name="nueva_descripcion" id="modal_descripcion" required>
           </div>
-          <div style="margin:15px 0">
-            <button type="submit" style="background:#007bff;color:#fff;padding:10px 20px;border:none;border-radius:6px;margin-right:10px">
-              💾 Actualizar Todos los Materiales
-            </button>
-            <button type="button" onclick="cerrarModalEAN()" style="background:#6c757d;color:#fff;padding:10px 20px;border:none;border-radius:6px">
-              ❌ Cancelar
-            </button>
+          <div class="btn-row" style="margin-top:8px">
+            <button type="submit" class="btn btn-primary">💾 Actualizar todos</button>
+            <button type="button" onclick="cerrarModalEAN()" class="btn btn-ghost">Cancelar</button>
           </div>
         </form>
       </div>
     </div>
-    
+
     <script>
-    function editarEAN(ean, descripcion) {
+    function editarEAN(ean, desc) {
       document.getElementById('modal_ean').value = ean;
       document.getElementById('modal_ean_display').textContent = ean;
-      document.getElementById('modal_descripcion').value = descripcion;
+      document.getElementById('modal_descripcion').value = desc;
       document.getElementById('modalEAN').style.display = 'block';
     }
-    
-    function cerrarModalEAN() {
-      document.getElementById('modalEAN').style.display = 'none';
-    }
-    
-    // Cerrar modal al hacer clic fuera
+    function cerrarModalEAN() { document.getElementById('modalEAN').style.display = 'none'; }
     document.getElementById('modalEAN').addEventListener('click', function(e) {
-      if (e.target === this) {
-        cerrarModalEAN();
-      }
+      if (e.target === this) cerrarModalEAN();
     });
     </script>
-    
-    {% else %}
-    <p style="color:#6c757d;font-style:italic">No hay EANs registrados en la base de datos.</p>
-    {% endif %}
-  </fieldset>
 
-  <fieldset>
-    <legend>📊 Importar / Exportar Base de Datos</legend>
-    <p style="font-size:14px;color:#495057;margin-bottom:15px">
-      Gestiona la base de datos de materiales mediante archivos CSV.
-    </p>
-    
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
-      
-      <!-- Exportar -->
-      <div style="border:1px solid #dee2e6;border-radius:8px;padding:15px;background:#f8f9fa">
-        <h4 style="margin:0 0 10px;color:#28a745">📤 Exportar Materiales</h4>
-        <p style="font-size:12px;color:#6c757d;margin:5px 0">
-          Descarga toda la base de datos de materiales en formato Excel con formato profesional.
-        </p>
-        <a href="/admin/exportar_materiales" 
-           style="display:inline-block;background:#28a745;color:#fff;padding:10px 15px;text-decoration:none;border-radius:6px;margin-top:10px">
-          � Descargar Excel (.xlsx)
-        </a>
-        <div style="font-size:11px;color:#6c757d;margin-top:8px">
-          ℹ️ Incluye: ID, Código, EAN, Descripción, Caducidad, Estado, Operario, Fechas<br>
-          ✨ Formato Excel con estilos y columnas ajustadas
-        </div>
+    {% else %}
+    <p style="color:#94a3b8;font-style:italic;font-size:13px">No hay EANs registrados en la base de datos.</p>
+    {% endif %}
+  </div><!-- /ean card -->
+
+</main><!-- /page -->
+
+<!-- ════ MODAL OPERARIO ════ -->
+<div id="modalOperario" class="modal-ov">
+  <div class="modal-box">
+    <h3 id="modalTitulo">➕ Crear Nuevo Operario</h3>
+    <form id="formOperario">
+      <div class="fg">
+        <label>Número de operario</label>
+        <input type="text" id="operarioNumero" required placeholder="Ej: 001, US123…">
+        <small style="color:#94a3b8;font-size:11px">Identificador único del operario</small>
       </div>
-      
-      <!-- Importar -->
-      <div style="border:1px solid #dee2e6;border-radius:8px;padding:15px;background:#f8f9fa">
-        <h4 style="margin:0 0 10px;color:#007bff">📤 Importar Materiales</h4>
-        <p style="font-size:12px;color:#6c757d;margin:5px 0">
-          Sube un archivo Excel (.xlsx, .xls) o CSV para agregar materiales a la base de datos.
-        </p>
-        <form method="POST" action="/admin/importar_materiales" enctype="multipart/form-data" style="margin-top:10px">
-          <input type="file" name="archivo" accept=".xlsx,.xls,.csv" required 
-                 style="margin-bottom:10px;padding:5px;border:1px solid #ddd;border-radius:4px;width:100%">
-          <button type="submit" 
-                  style="background:#007bff;color:#fff;padding:10px 15px;border:none;border-radius:6px;width:100%">
-            � Subir e Importar
-          </button>
-        </form>
-        <div style="font-size:11px;color:#6c757d;margin-top:8px">
-          📊 Formatos: Excel (.xlsx, .xls) o CSV (.csv)<br>
-          ⚠️ Campos requeridos: Código, Descripción<br>
-          ✅ Valida consistencia EAN-Descripción automáticamente
-        </div>
+      <div class="fg">
+        <label>Nombre completo</label>
+        <input type="text" id="operarioNombre" required placeholder="Nombre y apellidos">
       </div>
-      
-      <!-- Borrar todos los materiales -->
-      <div style="border:1px solid #dc3545;border-radius:8px;padding:15px;background:#fff5f5;margin-top:15px">
-        <h4 style="margin:0 0 10px;color:#dc3545">🗑️ Limpiar Base de Datos [NUEVA FUNCIÓN]</h4>
-        <p style="font-size:12px;color:#721c24;margin:5px 0;font-weight:500">
-          ⚠️ <strong>PELIGRO:</strong> Esta acción eliminará TODOS los materiales de la base de datos de forma permanente.
-        </p>
-        <p style="font-size:11px;color:#6c757d;margin:5px 0">
-          Útil para limpiar datos de ejemplo antes de importar datos reales. Esta operación no se puede deshacer.
-        </p>
-        
-        <form method="POST" action="/admin/borrar_materiales" style="margin-top:15px" 
-              onsubmit="return confirm('⚠️ ¿Estás SEGURO de que quieres eliminar TODOS los materiales?\\n\\nEsta acción NO SE PUEDE DESHACER.\\n\\nEscribe BORRAR en el campo para confirmar.')">
-          <div style="margin-bottom:10px">
-            <label style="display:block;font-weight:bold;color:#721c24;margin-bottom:5px">
-              Para confirmar, escribe: <code style="background:#f8d7da;padding:2px 4px">BORRAR</code>
-            </label>
-            <input type="text" name="confirmacion" placeholder="Escribe BORRAR aquí" required
-                   style="padding:8px;border:2px solid #dc3545;border-radius:4px;width:100%;font-family:monospace">
-          </div>
-          
-          <button type="submit" 
-                  style="background:#dc3545;color:#fff;padding:10px 15px;border:none;border-radius:6px;width:100%;font-weight:bold">
-            🗑️ ELIMINAR TODOS LOS MATERIALES
-          </button>
-        </form>
-        
-        <div style="font-size:11px;color:#6c757d;margin-top:8px">
-          🔒 Solo administradores pueden realizar esta operación<br>
-          📝 Se registra en los logs del sistema<br>
-          🧹 También limpia descripciones EAN huérfanas
-        </div>
+      <div class="fg">
+        <label>Rol</label>
+        <select id="operarioRol" required>
+          <option value="operario">👷 Operario</option>
+          <option value="almacenero">📦 Almacenero</option>
+          <option value="admin">⚙️ Administrador</option>
+        </select>
       </div>
-      
-    </div>
-    
-    <!-- Formato Excel/CSV esperado -->
-    <details style="margin-top:15px">
-      <summary style="cursor:pointer;font-weight:bold;color:#495057">📋 Formato de Archivos Esperado</summary>
-      <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;padding:15px;margin-top:10px;font-family:monospace;font-size:11px">
-        <strong>📊 EXCEL (.xlsx, .xls):</strong><br>
-        • Primera fila: Encabezados de columnas<br>
-        • Datos a partir de la segunda fila<br>
-        • Se procesan todas las hojas activas<br><br>
-        
-        <strong>📄 CSV (.csv):</strong><br>
-        • Primera línea: Encabezados separados por comas<br>
-        • Codificación UTF-8 recomendada<br><br>
-        
-        <strong>Encabezados requeridos (primera fila/línea):</strong><br>
-        <code>Código | EAN | Descripción | Caducidad | Estado | Operario</code>
-        <br><br>
-        <strong>Ejemplo de datos:</strong><br>
-        <code>MAT001 | 7612894141818 | SIKAFLEX NEGRA | 2025-12-31 | disponible | </code><br>
-        <code>MAT002 | 1234567890123 | TORNILLO M8 | | asignado | Juan Pérez</code>
-        <br><br>
-        <strong>⚠️ Notas importantes:</strong><br>
-        • <strong>Código</strong> y <strong>Descripción</strong> son obligatorios<br>
-        • <strong>EAN</strong>: opcional, pero se valida consistencia si se proporciona<br>
-        • <strong>Estado</strong>: disponible, asignado, gastado, devuelto, precintado<br>
-        • <strong>Caducidad</strong>: formato YYYY-MM-DD (opcional)<br>
-        • <strong>Operario</strong>: nombre del operario asignado (opcional)<br>
-        • ✅ Se valida automáticamente la consistencia EAN-Descripción
+      <div id="estadisticasOperario" style="display:none;padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:#475569">📊 Estadísticas</div>
+        <div id="statsContent"></div>
       </div>
-    </details>
-  </fieldset>
+      <div class="btn-row" style="justify-content:flex-end;margin-top:8px">
+        <button type="button" onclick="cerrarModal()" class="btn btn-ghost">Cancelar</button>
+        <button type="submit" id="btnGuardar" class="btn btn-primary">💾 Guardar</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <script>
@@ -3041,6 +2966,56 @@ document.addEventListener('DOMContentLoaded', function() {
   cargarContadorEscaneados();
 });
 
+// ── Actualización desde GitHub ─────────────────────────────────
+async function actualizarDesdeGitHub() {
+  const btn = document.getElementById('btn-update');
+  const output = document.getElementById('update-output');
+  const section = document.getElementById('update-section');
+  
+  btn.disabled = true;
+  btn.textContent = '⏳ Actualizando…';
+  output.style.display = 'block';
+  output.textContent = 'Conectando con GitHub…';
+
+  try {
+    const resp = await fetch('/api/admin/update', { method: 'POST' });
+    const data = await resp.json();
+
+    output.textContent = data.output || data.mensaje || '(sin respuesta)';
+
+    if (data.success) {
+      if (data.hubo_cambios) {
+        btn.textContent = '✅ Actualizado';
+        document.getElementById('btn-restart').style.display = 'inline-block';
+      } else {
+        btn.textContent = '✅ Ya estás al día';
+        btn.disabled = false;
+      }
+    } else {
+      btn.textContent = '❌ Error — Reintentar';
+      btn.disabled = false;
+    }
+  } catch(e) {
+    output.textContent = 'Error de conexión: ' + e.message;
+    btn.textContent = '❌ Error — Reintentar';
+    btn.disabled = false;
+  }
+}
+
+async function reiniciarApp() {
+  const btn = document.getElementById('btn-restart');
+  btn.disabled = true;
+  btn.textContent = '⏳ Reiniciando…';
+  
+  try {
+    await fetch('/api/admin/restart', { method: 'POST' });
+  } catch(e) { /* Se espera que la conexión se corte */ }
+
+  // Esperar y recargar
+  document.getElementById('update-output').textContent += '\\n\\nReiniciando servidor… recargando en 4 segundos.';
+  setTimeout(() => { window.location.reload(); }, 4000);
+}
+
 // Cargar contador de materiales escaneados
 async function cargarContadorEscaneados() {
   try {
@@ -3056,7 +3031,6 @@ async function cargarContadorEscaneados() {
   }
 }
 </script>
-
 </body></html>
 """
 
@@ -4429,6 +4403,69 @@ def api_hora_servidor():
         "hora": ahora.strftime("%H:%M:%S"),
         "full": texto
     })
+
+# ================== Actualización desde GitHub ==================
+@app.post("/api/admin/update")
+def api_admin_update():
+    """Ejecuta git pull + pip install. Solo administradores."""
+    if current_role() != "admin":
+        return jsonify({"success": False, "mensaje": "Acceso denegado"}), 403
+
+    import subprocess, sys as _sys
+    output_lines = []
+
+    # git pull
+    try:
+        r = subprocess.run(
+            ["git", "pull", "origin", "main"],
+            cwd=BASE_DIR,
+            capture_output=True, text=True, timeout=60
+        )
+        output_lines.append("── git pull ──")
+        output_lines.append(r.stdout.strip() or "(sin salida)")
+        if r.stderr.strip():
+            output_lines.append(r.stderr.strip())
+        hubo_cambios = "Already up to date." not in r.stdout
+    except FileNotFoundError:
+        return jsonify({"success": False, "mensaje": "Git no está instalado o no está en el PATH."}), 500
+    except subprocess.TimeoutExpired:
+        return jsonify({"success": False, "mensaje": "Tiempo de espera agotado al contactar GitHub."}), 500
+
+    # pip install si hubo cambios en requirements
+    output_lines.append("")
+    output_lines.append("── pip install ──")
+    r2 = subprocess.run(
+        [_sys.executable, "-m", "pip", "install", "-r",
+         os.path.join(BASE_DIR, "requirements.txt"), "--quiet"],
+        cwd=BASE_DIR,
+        capture_output=True, text=True, timeout=120
+    )
+    output_lines.append(r2.stdout.strip() or "Sin cambios en dependencias.")
+    if r2.stderr.strip():
+        output_lines.append(r2.stderr.strip())
+
+    return jsonify({
+        "success": True,
+        "hubo_cambios": hubo_cambios,
+        "output": "\n".join(output_lines)
+    })
+
+
+@app.post("/api/admin/restart")
+def api_admin_restart():
+    """Reinicia el proceso de la aplicación. Solo administradores."""
+    if current_role() != "admin":
+        return jsonify({"success": False, "mensaje": "Acceso denegado"}), 403
+
+    import threading, sys as _sys
+    def _do_restart():
+        import time, os as _os
+        time.sleep(1.5)
+        _os.execv(_sys.executable, [_sys.executable] + _sys.argv)
+
+    threading.Thread(target=_do_restart, daemon=True).start()
+    return jsonify({"success": True, "mensaje": "Reiniciando en 1.5 segundos…"})
+
 
 # ================== Run ==================
 if __name__ == "__main__":

@@ -1,1 +1,0 @@
-CREAR_PORTABLE.bat

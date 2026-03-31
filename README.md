@@ -1,145 +1,104 @@
-# 🏗️ Sistema de Gestión de Materiales
+# Gestión de Materiales
 
-Aplicación web para el control de materiales de construcción con gestión de inventario, códigos de barras y registro de operarios.
+Aplicación web en Flask para el control de materiales con códigos de barras, gestión de operarios y exportación a Excel.
 
-## 📋 Características
+## Características
 
-- ✅ Gestión de materiales con códigos de barras
-- 📊 Control de stock y ubicaciones
-- 👥 Sistema de autenticación de operarios
-- 📈 Exportación a Excel
-- 🖨️ Generación de códigos de barras
-- 💻 Interfaz web responsive
+- Registro y seguimiento de materiales con código EAN
+- Generación de códigos de barras
+- Control de estados: disponible, en uso, gastado, retirado, caducado…
+- Sistema de roles: administrador, almacenero, operario
+- Exportación a Excel
+- Interfaz web responsive (también funciona desde móvil)
+- Actualización automática desde GitHub (panel de administración)
 
-## 🚀 Instalación
+## Requisitos
 
-### Requisitos previos
-- Python 3.8 o superior
-- pip (gestor de paquetes de Python)
-- Git (para clonar y actualizar el repositorio)
+- **Python 3.10+** — [descargar](https://www.python.org/downloads/)
+- **Git** — [descargar](https://git-scm.com/downloads)
 
-### Instalación rápida
+## Instalación en un PC nuevo
 
 ```bash
-# Clonar el repositorio
-git clone https://github.com/TU_USUARIO/GestionMateriales.git
+git clone https://github.com/victorestebanmartin-design/GestionMateriales.git
 cd GestionMateriales
-
-# Crear entorno virtual (recomendado)
-python -m venv .venv
-
-# Activar entorno virtual
-# En Windows:
-.venv\Scripts\activate
-# En Linux/Mac:
-source .venv/bin/activate
-
-# Instalar dependencias
-pip install -r requirements.txt
-
-# Crear la base de datos (primera vez solamente)
-python database/create_herramientas_db.py
-
-# Ejecutar la aplicación
-python app.py
+python install.py
 ```
 
-La aplicación estará disponible en: `http://localhost:5000`
+El instalador crea el entorno virtual, instala dependencias, inicializa las bases de datos y genera el script de arranque.
 
-### 🔄 Trabajar desde múltiples PCs
+## Arranque
 
-**En el primer PC (ya configurado):**
+**Windows** (doble clic o desde terminal):
+```
+start.bat
+```
+
+**Manual** (cualquier SO):
 ```bash
-# Hacer push de tus cambios
-git add .
-git commit -m "Descripción de los cambios"
-git push
+.venv\Scripts\python run_app_window.py   # Windows
+.venv/bin/python run_app_window.py       # Linux / macOS
 ```
 
-**En otro PC (primera vez):**
+La app abre en ventana nativa. Acceso también desde cualquier PC de la red en `http://<IP-del-servidor>:5000`.
+
+## Actualización automática
+
+1. Entra en `/admin` con tu cuenta de administrador.
+2. Baja hasta la sección **"🔄 Actualización de la aplicación"**.
+3. Pulsa **"Actualizar desde GitHub"** — ejecuta `git pull` + `pip install`.
+4. Si hubo cambios, aparece el botón **"♻️ Reiniciar aplicación"**.
+
+O manualmente desde terminal:
 ```bash
-# Clonar el repositorio
-git clone https://github.com/TU_USUARIO/GestionMateriales.git
-cd GestionMateriales
-
-# Crear entorno virtual
-python -m venv .venv
-.venv\Scripts\activate
-
-# Instalar dependencias
-pip install -r requirements.txt
-
-# Copiar las bases de datos del PC original (si es necesario)
-# O crear nuevas bases de datos
-python database/create_herramientas_db.py
+git pull origin main
+.venv\Scripts\pip install -r requirements.txt
 ```
 
-**Para actualizar en cualquier PC:**
-```bash
-# Obtener últimos cambios
-git pull
+## Credenciales por defecto
 
-# Si hay nuevas dependencias
-pip install -r requirements.txt
+| Número | Rol |
+|--------|-----|
+| `999999` | Administrador |
+| `US4281` | Administrador |
+| `US272` | Almacenero |
+| `US25013` | Almacenero |
 
-# Ejecutar la aplicación
-python app.py
+Las contraseñas/PINs se configuran con variables de entorno o directamente en `app.py`:
+```
+ADMIN_PASSWORD, ALMACEN_PIN, OPERARIO_PIN
 ```
 
-## 📦 Versión Portable
+## Estructura del proyecto
 
-Para instalar en equipos sin internet:
-
-```bash
-# Ejecutar el instalador completo
-instalar_completo.bat
+```
+GestionMateriales/
+├── app.py                    # Aplicación principal (Flask)
+├── run_app_window.py         # Arranque en ventana nativa (pywebview)
+├── install.py                # Instalador cross-platform
+├── start.bat                 # Arranque rápido Windows
+├── requirements.txt          # Dependencias Python
+├── crear_icono.py            # Generador de iconos PWA
+├── LibreBarcode128-Regular.ttf
+├── database/
+│   ├── create_herramientas_db.py   # Crea las BD en el primer uso
+│   ├── materiales.db               # [NO en Git – datos locales]
+│   └── operarios.db                # [NO en Git – datos locales]
+├── shared/
+│   ├── auth.py
+│   └── operarios_db.py
+└── static/icons/
 ```
 
-Esto:
-1. Descarga Python portable
-2. Instala todas las dependencias
-3. Crea un paquete portable listo para usar
+## Bases de datos
 
-## 🗄️ Base de Datos
+Los archivos `.db` no se suben a GitHub (están en `.gitignore`). Para copiar datos entre equipos, copia manualmente `database/materiales.db` y `database/operarios.db`.
 
-Las bases de datos se crean automáticamente en la carpeta `database/`:
-- `materiales.db` - Inventario de materiales
-- `operarios.db` - Usuarios y autenticación
+## Tecnologías
 
-**⚠️ Importante**: Las bases de datos NO se sincronizan con Git por seguridad. Para migrar datos entre equipos:
-
-```bash
-# Copiar manualmente los archivos .db de un equipo a otro
-database/materiales.db
-database/operarios.db
-```
-
-## 🛠️ Tecnologías
-
-- **Backend**: Flask (Python)
-- **Frontend**: HTML5, CSS3, JavaScript
-- **Base de datos**: SQLite
-- **Códigos de barras**: python-barcode
+- **Backend**: Flask + Werkzeug
+- **Frontend**: HTML5 / CSS3 / JavaScript (sin frameworks)
+- **BD**: SQLite
+- **Códigos de barras**: python-barcode + Pillow
 - **Excel**: openpyxl
-
-## 📱 Uso
-
-1. **Login**: Accede con tu usuario y contraseña
-2. **Registro de materiales**: Añade nuevos materiales al inventario
-3. **Generación de códigos**: Crea códigos de barras para cada material
-4. **Control de stock**: Actualiza entradas y salidas
-5. **Reportes**: Exporta el inventario a Excel
-
-## 🔐 Seguridad
-
-- Las contraseñas se almacenan con hash
-- Sesiones seguras con tokens
-- Validación de formularios
-
-## 📄 Licencia
-
-Este proyecto es de uso interno.
-
-## 👨‍💻 Autor
-
-Desarrollado para gestión interna de materiales.
+- **Ventana nativa**: pywebview

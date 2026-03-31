@@ -5,6 +5,7 @@
 database/*.db
 
 # Entornos virtuales Python
+.venv/
 venv/
 env/
 ENV/

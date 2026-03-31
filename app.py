@@ -122,18 +122,13 @@ def init_db():
                 activo INTEGER DEFAULT 1
             )
         """)
-        # Insertar usuarios por defecto solo si no existen
-        defaults = [
-            ("999999",  "Administrador",    "admin"),
-            ("US4281",  "Administrador 2",  "admin"),
-            ("US272",   "Almacenero 1",     "almacenero"),
-            ("US25013", "Almacenero 2",     "almacenero"),
-        ]
-        for numero, nombre, rol in defaults:
+        # Solo crear el admin 999999 si la tabla está vacía (instalación limpia)
+        c = conn.execute("SELECT COUNT(*) FROM operarios")
+        if c.fetchone()[0] == 0:
             conn.execute("""
-                INSERT OR IGNORE INTO operarios (numero, nombre, rol, activo)
-                VALUES (?, ?, ?, 1)
-            """, (numero, nombre, rol))
+                INSERT INTO operarios (numero, nombre, rol, activo)
+                VALUES ('999999', 'Administrador', 'admin', 1)
+            """)
 
 def row_to_material(r)->Material:
     return Material(**dict(r))

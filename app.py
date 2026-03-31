@@ -2305,7 +2305,7 @@ def tpl_admin():
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
 *{box-sizing:border-box}
-body{font-family:'Segoe UI',system-ui,sans-serif;margin:0;background:#0f172a;color:#e2e8f0;min-height:100vh}
+body{font-family:'Segoe UI',system-ui,sans-serif;margin:0;background:#f1f5f9;color:#1e293b;min-height:100vh}
 .topbar{background:#0f172a;color:#fff;padding:0 24px;height:54px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.3)}
 .topbar-logo{font-size:16px;font-weight:700;flex:1;color:#f8fafc;letter-spacing:-.2px}
 .topbar-logo em{color:#60a5fa;font-style:normal}
@@ -3242,11 +3242,12 @@ def tpl_home():
 <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
 <style>
 :root{
-  --bg:#f8f9fa; --card:#fff; --shadow:0 2px 10px rgba(0,0,0,.08);
-  --btn:#1a73e8; --btnh:#1558b0; --ok:#2e7d32; --warn:#c39200; --err:#c62828;
+  --bg:#0f172a; --card:#1e293b; --shadow:0 2px 10px rgba(0,0,0,.4);
+  --btn:#3b82f6; --btnh:#2563eb; --ok:#22c55e; --warn:#f59e0b; --err:#ef4444;
+  --text:#e2e8f0; --text-muted:#94a3b8; --border:#334155;
 }
 *{box-sizing:border-box}
-body{font-family:Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:16px;background:var(--bg)}
+body{font-family:Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:16px;background:var(--bg);color:var(--text)}
 .container{max-width:1200px;margin:0 auto;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:16px}
 h1{margin:8px 0 12px;text-align:center}
 .tag{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef3ff;margin:6px 6px 0 0}
@@ -4633,7 +4634,9 @@ def api_admin_restart():
     def _do_restart():
         import time, os as _os
         time.sleep(1.5)
-        _os.execv(_sys.executable, [_sys.executable] + _sys.argv)
+        # Salir con código 42: start.bat detecta este código y relanza el proceso.
+        # Esto libera el puerto correctamente antes de que el nuevo proceso arranque.
+        _os._exit(42)
 
     threading.Thread(target=_do_restart, daemon=True).start()
     return jsonify({"success": True, "mensaje": "Reiniciando en 1.5 segundos…"})

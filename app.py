@@ -4914,9 +4914,15 @@ def _ensure_solicitud_cliente_table():
 
 def _check_agent_token():
     auth = request.headers.get("Authorization", "")
-    if auth.startswith("Bearer "):
-        return auth[7:] == ADMIN_PASSWORD
-    return False
+    if not auth.startswith("Bearer "):
+        return False
+    token = auth[7:]
+    # Acepta la contraseña admin
+    if token == ADMIN_PASSWORD:
+        return True
+    # Acepta también el número de operario con rol admin
+    op = get_operario_by_numero(token)
+    return op is not None and op.get("rol") == "admin"
 
 @app.get("/api/admin/estado_solicitud_cliente")
 def api_estado_solicitud_cliente():

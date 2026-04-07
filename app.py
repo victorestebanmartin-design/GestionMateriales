@@ -5122,18 +5122,36 @@ def api_admin_update():
     import subprocess, sys as _sys
     output_lines = []
 
-    # git pull
+    # git fetch + reset (descarta cambios locales y sincroniza con remoto)
     try:
-        r = subprocess.run(
-            ["git", "pull", "origin", "main"],
+        # 1. Descargar cambios sin aplicar
+        rf = subprocess.run(
+            ["git", "fetch", "origin", "main"],
             cwd=BASE_DIR,
             capture_output=True, text=True, timeout=60
         )
-        output_lines.append("── git pull ──")
+        output_lines.append("── git fetch ──")
+        output_lines.append(rf.stdout.strip() or "(sin salida)")
+        if rf.stderr.strip():
+            output_lines.append(rf.stderr.strip())
+
+        # 2. Ver si hay diferencias entre local y remoto
+        diff = subprocess.run(
+            ["git", "diff", "HEAD", "FETCH_HEAD", "--name-only"],
+            cwd=BASE_DIR, capture_output=True, text=True
+        )
+        hubo_cambios = bool(diff.stdout.strip())
+
+        # 3. Forzar actualización descartando cualquier cambio local
+        r = subprocess.run(
+            ["git", "reset", "--hard", "FETCH_HEAD"],
+            cwd=BASE_DIR,
+            capture_output=True, text=True, timeout=30
+        )
+        output_lines.append("── git reset --hard FETCH_HEAD ──")
         output_lines.append(r.stdout.strip() or "(sin salida)")
         if r.stderr.strip():
             output_lines.append(r.stderr.strip())
-        hubo_cambios = "Already up to date." not in r.stdout
     except FileNotFoundError:
         return jsonify({"success": False, "mensaje": "Git no está instalado o no está en el PATH."}), 500
     except subprocess.TimeoutExpired:

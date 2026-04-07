@@ -2491,8 +2491,16 @@ hr.div{border:none;border-top:1px solid #f1f5f9;margin:16px 0}
     <div class="tile excel">
       <div class="tile-title">📊 Procesar Bajas en Excel</div>
       <div class="tile-desc" id="count-pendientes-excel">Cargando…</div>
-      <button id="btn-ejecutar-excel" onclick="ejecutarBajasExcel()" class="btn btn-success btn-full btn-sm">▶️ Ejecutar en Excel</button>
-      <pre id="excel-output" style="display:none;margin-top:6px;background:#f1f5f9;border-radius:6px;padding:8px;font-size:11px;max-height:130px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;color:#1e293b"></pre>
+      <button id="btn-ejecutar-excel" onclick="ejecutarBajasExcel()" class="btn btn-success btn-full btn-sm">▶️ En este servidor</button>
+      <pre id="excel-output" style="display:none;margin-top:6px;background:#f1f5f9;border-radius:6px;padding:8px;font-size:11px;max-height:100px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;color:#1e293b"></pre>
+      <hr style="border:none;border-top:1px solid #e2e8f0;margin:2px 0">
+      <div style="display:flex;align-items:center;gap:5px">
+        <span id="agente-badge" style="flex-shrink:0;display:inline-block;width:8px;height:8px;border-radius:50%;background:#94a3b8"></span>
+        <span id="agente-estado-texto" style="font-size:10px;color:#64748b">Agente desconectado</span>
+      </div>
+      <button id="btn-enviar-agente" onclick="enviarAlAgente()" class="btn btn-info btn-full btn-sm">📡 Enviar al PC cliente</button>
+      <button id="btn-cancelar-agente" onclick="cancelarSolicitudAgente()" class="btn btn-ghost btn-full btn-sm" style="display:none;font-size:11px">✖ Cancelar solicitud</button>
+      <pre id="agente-output" style="display:none;margin-top:6px;background:#f1f5f9;border-radius:6px;padding:8px;font-size:11px;max-height:100px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;color:#1e293b"></pre>
     </div>
   </div>
 
@@ -3016,6 +3024,8 @@ document.addEventListener('DOMContentLoaded', function() {
   cargarContadorEscaneados();
   cargarContadorBajas();
   cargarPendientesExcel();
+  cargarEstadoAgente();
+  setInterval(cargarEstadoAgente, 8000);
 });
 
 // ── Actualización desde GitHub ─────────────────────────────────
@@ -3184,7 +3194,7 @@ async function cargarPendientesExcel() {
 
 async function ejecutarBajasExcel() {
   const desc = document.getElementById('count-pendientes-excel').textContent;
-  if (!confirm(`¿Ejecutar el proceso de bajas en Excel?\n\n${desc}\n\nAsegúrate de que el archivo Excel con la macro DAR_DE_BAJA esté abierto.`)) return;
+  if (!confirm(`¿Ejecutar el proceso de bajas en Excel?\n\n${desc}\n\nAsegúrate de que el archivo Excel con la macro DAR_DE_BAJA esté abierto EN ESTE SERVIDOR.`)) return;
   const btn = document.getElementById('btn-ejecutar-excel');
   const output = document.getElementById('excel-output');
   btn.disabled = true;
@@ -3197,7 +3207,7 @@ async function ejecutarBajasExcel() {
     output.textContent = d.salida || '(sin salida)';
     if (d.success) {
       btn.textContent = '✅ Completado';
-      setTimeout(() => { btn.disabled = false; btn.textContent = '▶️ Ejecutar en Excel'; }, 4000);
+      setTimeout(() => { btn.disabled = false; btn.textContent = '▶️ En este servidor'; }, 4000);
       cargarPendientesExcel();
       cargarContadorBajas();
     } else {
@@ -3209,6 +3219,85 @@ async function ejecutarBajasExcel() {
     btn.textContent = '❌ Error — Reintentar';
     btn.disabled = false;
   }
+}
+
+// ── Agente Cliente Excel ─────────────────────────────────
+let _agentePollingInterval = null;
+
+async function cargarEstadoAgente() {
+  try {
+    const r = await fetch('/api/admin/estado_solicitud_cliente');
+    const d = await r.json();
+    const badge   = document.getElementById('agente-badge');
+    const texto   = document.getElementById('agente-estado-texto');
+    const btnEnv  = document.getElementById('btn-enviar-agente');
+    const btnCan  = document.getElementById('btn-cancelar-agente');
+    const output  = document.getElementById('agente-output');
+    if (d.agente_online) {
+      badge.style.background = '#22c55e';
+      texto.textContent = 'Agente conectado';
+    } else {
+      badge.style.background = '#94a3b8';
+      texto.textContent = 'Agente desconectado';
+    }
+    const estado = d.estado || 'idle';
+    if (estado === 'idle') {
+      btnEnv.disabled = false; btnEnv.textContent = '📡 Enviar al PC cliente';
+      btnCan.style.display = 'none'; output.style.display = 'none';
+      _detenerPollingAgente();
+    } else if (estado === 'pendiente') {
+      btnEnv.disabled = true; btnEnv.textContent = '⏳ Esperando agente…';
+      btnCan.style.display = 'inline-flex';
+      output.style.display = 'block';
+      output.textContent = 'Solicitud enviada. Esperando que el agente la recoja…';
+      _iniciarPollingAgente();
+    } else if (estado === 'procesando') {
+      btnEnv.disabled = true; btnEnv.textContent = '⚙️ Procesando…';
+      btnCan.style.display = 'none';
+      output.style.display = 'block';
+      output.textContent = 'El agente está procesando las bajas en Excel…';
+      _iniciarPollingAgente();
+    } else if (estado === 'completado') {
+      btnEnv.disabled = false; btnEnv.textContent = '✅ Completado — Volver a enviar';
+      btnCan.style.display = 'none';
+      output.style.display = 'block'; output.textContent = d.salida || '(sin salida)';
+      cargarPendientesExcel(); cargarContadorBajas();
+      _detenerPollingAgente();
+    } else if (estado === 'error') {
+      btnEnv.disabled = false; btnEnv.textContent = '❌ Error — Reintentar';
+      btnCan.style.display = 'none';
+      output.style.display = 'block'; output.textContent = d.salida || 'Error desconocido';
+      _detenerPollingAgente();
+    }
+  } catch(e) { console.error('Estado agente error:', e); }
+}
+
+function _iniciarPollingAgente() {
+  if (!_agentePollingInterval)
+    _agentePollingInterval = setInterval(cargarEstadoAgente, 3000);
+}
+function _detenerPollingAgente() {
+  if (_agentePollingInterval) { clearInterval(_agentePollingInterval); _agentePollingInterval = null; }
+}
+
+async function enviarAlAgente() {
+  const desc = document.getElementById('count-pendientes-excel').textContent;
+  if (!confirm(`¿Enviar solicitud al agente cliente?\n\n${desc}\n\nEl script baja_excel_agente.py debe estar corriendo en el PC que tiene Excel abierto.`)) return;
+  try {
+    const r = await fetch('/api/admin/solicitar_bajas_cliente', { method: 'POST' });
+    const d = await r.json();
+    if (!d.success) { alert('❌ ' + (d.mensaje || 'Error al enviar solicitud')); return; }
+    cargarEstadoAgente();
+    _iniciarPollingAgente();
+  } catch(e) { alert('❌ Error de conexión: ' + e.message); }
+}
+
+async function cancelarSolicitudAgente() {
+  if (!confirm('¿Cancelar la solicitud pendiente?')) return;
+  try {
+    await fetch('/api/admin/cancelar_solicitud_cliente', { method: 'POST' });
+    cargarEstadoAgente();
+  } catch(e) { alert('Error: ' + e.message); }
 }
 </script>
 
@@ -4806,6 +4895,176 @@ def api_bajas():
         ).fetchall()
     return jsonify({"bajas": [dict(r) for r in rows], "total": len(rows)})
 
+# ================== Agente Cliente Excel ==================
+def _ensure_solicitud_cliente_table():
+    with get_db_materiales() as conn:
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS solicitud_excel_cliente (
+                id INTEGER PRIMARY KEY,
+                estado TEXT DEFAULT 'idle',
+                solicitada_en TEXT,
+                completada_en TEXT,
+                salida TEXT,
+                ultimo_poll_agente TEXT
+            )"""
+        )
+        conn.execute(
+            "INSERT OR IGNORE INTO solicitud_excel_cliente (id, estado) VALUES (1, 'idle')"
+        )
+
+def _check_agent_token():
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        return auth[7:] == ADMIN_PASSWORD
+    return False
+
+@app.get("/api/admin/estado_solicitud_cliente")
+def api_estado_solicitud_cliente():
+    """Estado actual de la solicitud al agente. Solo admin."""
+    if current_role() != "admin":
+        return jsonify({"success": False}), 403
+    _ensure_solicitud_cliente_table()
+    with get_db_materiales() as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute("SELECT * FROM solicitud_excel_cliente WHERE id=1").fetchone()
+    if not row:
+        return jsonify({"estado": "idle", "agente_online": False})
+    row = dict(row)
+    agente_online = False
+    if row.get("ultimo_poll_agente"):
+        try:
+            from datetime import datetime as _dt
+            dt = _dt.fromisoformat(row["ultimo_poll_agente"])
+            agente_online = (_dt.now() - dt).total_seconds() < 15
+        except Exception:
+            pass
+    return jsonify({
+        "estado": row["estado"],
+        "salida": row["salida"],
+        "solicitada_en": row["solicitada_en"],
+        "completada_en": row["completada_en"],
+        "agente_online": agente_online,
+    })
+
+@app.post("/api/admin/solicitar_bajas_cliente")
+def api_solicitar_bajas_cliente():
+    """Admin solicita al agente que procese las bajas. Solo admin."""
+    if current_role() != "admin":
+        return jsonify({"success": False}), 403
+    _ensure_solicitud_cliente_table()
+    with get_db_materiales() as conn:
+        row = conn.execute("SELECT estado FROM solicitud_excel_cliente WHERE id=1").fetchone()
+        if row and row[0] in ("pendiente", "procesando"):
+            return jsonify({"success": False, "mensaje": "Ya hay una solicitud en curso."})
+        conn.execute(
+            """UPDATE solicitud_excel_cliente
+               SET estado='pendiente', solicitada_en=datetime('now','localtime'),
+                   completada_en=NULL, salida=NULL
+               WHERE id=1"""
+        )
+    return jsonify({"success": True})
+
+@app.post("/api/admin/cancelar_solicitud_cliente")
+def api_cancelar_solicitud_cliente():
+    """Admin cancela la solicitud pendiente. Solo admin."""
+    if current_role() != "admin":
+        return jsonify({"success": False}), 403
+    _ensure_solicitud_cliente_table()
+    with get_db_materiales() as conn:
+        conn.execute(
+            "UPDATE solicitud_excel_cliente SET estado='idle', salida='Cancelada por el admin' WHERE id=1"
+        )
+    return jsonify({"success": True})
+
+@app.get("/api/agente/poll")
+def api_agente_poll():
+    """El agente consulta si hay solicitud pendiente. Auth: Bearer <admin_password>."""
+    if not _check_agent_token():
+        return jsonify({"error": "Token inválido"}), 401
+    _ensure_solicitud_cliente_table()
+    with get_db_materiales() as conn:
+        conn.execute(
+            "UPDATE solicitud_excel_cliente SET ultimo_poll_agente=datetime('now','localtime') WHERE id=1"
+        )
+        conn.row_factory = sqlite3.Row
+        row = conn.execute("SELECT estado FROM solicitud_excel_cliente WHERE id=1").fetchone()
+    estado = row["estado"] if row else "idle"
+    return jsonify({"hay_solicitud": estado == "pendiente"})
+
+@app.get("/api/agente/pendientes")
+def api_agente_pendientes():
+    """El agente descarga los materiales pendientes. Auth: Bearer."""
+    if not _check_agent_token():
+        return jsonify({"error": "Token inválido"}), 401
+    _ensure_procesado_excel_col()
+    with get_db_materiales() as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """SELECT id, codigo, descripcion, estado, operario_numero
+               FROM materiales
+               WHERE estado IN ('gastado','retirado')
+                 AND (procesado_excel IS NULL OR procesado_excel = 0)
+               ORDER BY fecha_asignacion ASC"""
+        ).fetchall()
+    return jsonify({"pendientes": [dict(r) for r in rows]})
+
+@app.post("/api/agente/iniciar")
+def api_agente_iniciar():
+    """El agente marca la solicitud como 'procesando'. Auth: Bearer."""
+    if not _check_agent_token():
+        return jsonify({"error": "Token inválido"}), 401
+    _ensure_solicitud_cliente_table()
+    with get_db_materiales() as conn:
+        conn.execute("UPDATE solicitud_excel_cliente SET estado='procesando' WHERE id=1")
+    return jsonify({"success": True})
+
+@app.post("/api/agente/completar")
+def api_agente_completar():
+    """El agente reporta la finalización y marca materiales como procesados."""
+    if not _check_agent_token():
+        return jsonify({"error": "Token inválido"}), 401
+    data = request.json or {}
+    salida = data.get("salida", "")
+    ids_procesados = data.get("ids_procesados", [])
+    _ensure_solicitud_cliente_table()
+    _ensure_procesado_excel_col()
+    with get_db_materiales() as conn:
+        conn.execute(
+            """UPDATE solicitud_excel_cliente
+               SET estado='completado', completada_en=datetime('now','localtime'), salida=?
+               WHERE id=1""",
+            (salida,)
+        )
+        for mid in ids_procesados:
+            row = conn.execute(
+                "SELECT codigo, descripcion, estado, operario_numero FROM materiales WHERE id=?",
+                (mid,)
+            ).fetchone()
+            conn.execute("UPDATE materiales SET procesado_excel=1 WHERE id=?", (mid,))
+            if row:
+                conn.execute(
+                    """INSERT INTO bajas (codigo, descripcion, estado_original, operario_numero, fecha_baja)
+                       VALUES (?, ?, ?, ?, datetime('now','localtime'))""",
+                    (row[0], row[1], row[2], row[3])
+                )
+    return jsonify({"success": True})
+
+@app.post("/api/agente/error")
+def api_agente_error():
+    """El agente reporta un error. Auth: Bearer."""
+    if not _check_agent_token():
+        return jsonify({"error": "Token inválido"}), 401
+    mensaje = (request.json or {}).get("mensaje", "Error desconocido")
+    _ensure_solicitud_cliente_table()
+    with get_db_materiales() as conn:
+        conn.execute(
+            """UPDATE solicitud_excel_cliente
+               SET estado='error', completada_en=datetime('now','localtime'), salida=?
+               WHERE id=1""",
+            (mensaje,)
+        )
+    return jsonify({"success": True})
+
 @app.post("/api/admin/ejecutar_bajas_excel")
 def api_ejecutar_bajas_excel():
     """Ejecuta baja_excel.py en modo automático. Solo admin."""
@@ -4813,11 +5072,14 @@ def api_ejecutar_bajas_excel():
         return jsonify({"success": False, "salida": "Acceso denegado"}), 403
     import subprocess, sys as _sys
     script = os.path.join(BASE_DIR, "baja_excel.py")
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
     try:
         r = subprocess.run(
             [_sys.executable, script],
             cwd=BASE_DIR,
-            capture_output=True, text=True, timeout=180
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=180, env=env
         )
         salida = r.stdout.strip() or "(sin salida)"
         if r.stderr.strip():

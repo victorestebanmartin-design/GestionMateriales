@@ -3,3 +3,4 @@ Werkzeug==3.1.2
 openpyxl==3.1.5
 python-barcode[images]
 pywebview==5.3.1
+pywin32

@@ -86,7 +86,8 @@ ok(f"Python {sys.version_info.major}.{sys.version_info.minor} — OK")
 
 IS_WINDOWS = platform.system() == "Windows"
 VENV_PYTHON = os.path.join(VENV_DIR, "Scripts" if IS_WINDOWS else "bin", "python")
-VENV_PIP    = os.path.join(VENV_DIR, "Scripts" if IS_WINDOWS else "bin", "pip")
+# Usar python -m pip en vez de pip.exe para evitar bloqueos de directiva de grupo
+VENV_PIP    = None  # no se usa directamente
 TOTAL = 5
 
 # ── Paso 0b: WebView2 Runtime (solo Windows) ─────────────────────────────────
@@ -117,7 +118,7 @@ ok("pip actualizado.")
 # ── Paso 3: instalar dependencias ─────────────────────────────────────────────
 step(3, TOTAL, "Instalando dependencias (requirements.txt)…")
 req_file = os.path.join(BASE_DIR, "requirements.txt")
-result = subprocess.run([VENV_PIP, "install", "-r", req_file])
+result = subprocess.run([VENV_PYTHON, "-m", "pip", "install", "-r", req_file])
 if result.returncode != 0:
     error("Error instalando dependencias. Comprueba tu conexión a Internet.")
     sys.exit(1)

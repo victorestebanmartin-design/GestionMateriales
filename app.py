@@ -2321,10 +2321,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;margin:0;background:#f1f5f9;col
 .card{background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.07),0 2px 12px rgba(0,0,0,.04);padding:22px;margin-bottom:20px}
 .card-head{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid #f1f5f9;gap:12px}
 .card-title{font-size:15px;font-weight:700;color:#0f172a;display:flex;align-items:center;gap:8px;margin:0;flex-shrink:0}
-.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:20px}
 .tile{background:#fff;border-radius:14px;padding:18px 16px;box-shadow:0 1px 4px rgba(0,0,0,.07);display:flex;flex-direction:column;gap:10px;border-top:3px solid #e2e8f0}
 .tile.amber{border-top-color:#f59e0b}.tile.cyan{border-top-color:#06b6d4}
-.tile.emerald{border-top-color:#10b981}.tile.rose{border-top-color:#f43f5e}
+.tile.emerald{border-top-color:#10b981}.tile.rose{border-top-color:#f43f5e}.tile.indigo{border-top-color:#6366f1}
 .tile-title{font-size:13px;font-weight:700;color:#1e293b}
 .tile-desc{font-size:11px;color:#94a3b8;line-height:1.5;flex:1}
 .row2{display:grid;grid-template-columns:3fr 2fr;gap:20px;margin-bottom:20px;align-items:start}
@@ -2357,6 +2357,7 @@ code{background:#f1f5f9;color:#475569;padding:2px 6px;border-radius:4px;font-fam
 .badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600}
 .badge-ok{background:#dcfce7;color:#166534}.badge-warn{background:#fee2e2;color:#991b1b}
 .badge-blue{background:#dbeafe;color:#1e40af}
+.badge-red{background:#fee2e2;color:#991b1b}.badge-orange{background:#ffedd5;color:#9a3412}
 .danger-zone{border:1.5px solid #fca5a5;border-radius:10px;background:#fef2f2;padding:18px;margin-top:16px}
 .danger-zone-title{font-size:13px;font-weight:700;color:#991b1b;margin:0 0 8px}
 .gh-card{background:linear-gradient(135deg,#0f172a,#1e3a5f);color:#f8fafc;border-radius:14px;padding:22px;margin-bottom:20px}
@@ -2481,6 +2482,11 @@ hr.div{border:none;border-top:1px solid #f1f5f9;margin:16px 0}
                style="flex:1;padding:6px 8px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:12px;width:0;min-width:0">
         <button type="submit" class="btn btn-danger btn-sm">Borrar</button>
       </form>
+    </div>
+    <div class="tile indigo">
+      <div class="tile-title">✅ Dados de Baja</div>
+      <div class="tile-desc" id="count-bajas">Cargando…</div>
+      <button onclick="mostrarSeccionBajas()" class="btn btn-primary btn-full btn-sm">📋 Ver Historial</button>
     </div>
   </div>
 
@@ -3002,6 +3008,7 @@ async function exportarOperarios() {
 document.addEventListener('DOMContentLoaded', function() {
   cargarOperarios();
   cargarContadorEscaneados();
+  cargarContadorBajas();
 });
 
 // ── Actualización desde GitHub ─────────────────────────────────
@@ -3091,7 +3098,98 @@ async function cargarContadorEscaneados() {
     document.getElementById('count-escaneados').textContent = 'Error al cargar';
   }
 }
+
+// ── Dados de Baja ──────────────────────────────────────────────
+let _bajasSectionVisible = false;
+
+async function cargarContadorBajas() {
+  try {
+    const r = await fetch('/api/bajas');
+    const d = await r.json();
+    const n = d.total || 0;
+    document.getElementById('count-bajas').textContent =
+      n === 0 ? 'Sin registros de bajas' :
+      n === 1 ? '1 material dado de baja' :
+      `${n} materiales dados de baja`;
+  } catch {
+    document.getElementById('count-bajas').textContent = 'Error al cargar';
+  }
+}
+
+function mostrarSeccionBajas() {
+  const sec = document.getElementById('seccion-bajas');
+  if (!_bajasSectionVisible) {
+    sec.style.display = 'block';
+    _bajasSectionVisible = true;
+    cargarTablaBajas();
+    sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+async function cargarTablaBajas(filtro) {
+  const tbody = document.getElementById('bajas-tbody');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:18px;color:#64748b">Cargando…</td></tr>';
+  try {
+    const r = await fetch('/api/bajas');
+    const d = await r.json();
+    let rows = d.bajas || [];
+    if (filtro) {
+      const f = filtro.toLowerCase();
+      rows = rows.filter(b =>
+        (b.codigo || '').toLowerCase().includes(f) ||
+        (b.descripcion || '').toLowerCase().includes(f) ||
+        (b.operario_numero || '').toLowerCase().includes(f)
+      );
+    }
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:18px;color:#64748b">No hay registros</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(b => `
+      <tr>
+        <td style="font-family:monospace;font-weight:600">${b.codigo || '—'}</td>
+        <td>${b.descripcion || '—'}</td>
+        <td><span class="badge badge-${b.estado_original === 'gastado' ? 'red' : 'orange'}">${b.estado_original || '—'}</span></td>
+        <td>${b.operario_numero || '—'}</td>
+        <td style="font-size:12px;white-space:nowrap">${b.fecha_baja || '—'}</td>
+      </tr>`).join('');
+  } catch {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:18px;color:#ef4444">Error al cargar</td></tr>';
+  }
+}
 </script>
+
+<!-- ════ SECCIÓN DADOS DE BAJA ════ -->
+<div id="seccion-bajas" class="card" style="display:none;margin-top:24px">
+  <div class="card-head" style="flex-wrap:wrap;gap:10px">
+    <h2 class="card-title">✅ Historial de Bajas</h2>
+    <div class="btn-row">
+      <input type="text" id="bajas-filtro" placeholder="🔍 Filtrar…"
+             oninput="cargarTablaBajas(this.value)"
+             style="padding:6px 10px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:13px;width:200px">
+      <button onclick="cargarTablaBajas(document.getElementById('bajas-filtro').value)" class="btn btn-ghost btn-sm">🔄</button>
+    </div>
+  </div>
+  <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">
+          <th style="padding:10px 12px;text-align:left;color:#475569">Código</th>
+          <th style="padding:10px 12px;text-align:left;color:#475569">Descripción</th>
+          <th style="padding:10px 12px;text-align:left;color:#475569">Estado original</th>
+          <th style="padding:10px 12px;text-align:left;color:#475569">Operario</th>
+          <th style="padding:10px 12px;text-align:left;color:#475569">Fecha/hora baja</th>
+        </tr>
+      </thead>
+      <tbody id="bajas-tbody">
+        <tr><td colspan="5" style="text-align:center;padding:18px;color:#64748b">Haz clic en "Ver Historial" para cargar</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 </body></html>
 """
 
@@ -4579,6 +4677,84 @@ def api_hora_servidor():
         "full": texto
     })
 
+
+# ================== Bajas pendientes Excel ==================
+def _ensure_procesado_excel_col():
+    """Migración: añade la columna procesado_excel y crea la tabla bajas si no existen."""
+    with get_db_materiales() as conn:
+        try:
+            conn.execute("ALTER TABLE materiales ADD COLUMN procesado_excel INTEGER DEFAULT 0")
+        except Exception:
+            pass  # Ya existe
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS bajas (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                codigo          TEXT,
+                descripcion     TEXT,
+                estado_original TEXT,
+                operario_numero TEXT,
+                fecha_baja      TEXT DEFAULT (datetime('now','localtime'))
+            )"""
+        )
+
+@app.get("/api/bajas_pendientes_excel")
+def api_bajas_pendientes_excel():
+    """Devuelve materiales gastados/retirados no procesados en Excel. Solo admin."""
+    if current_role() != "admin":
+        return jsonify({"success": False}), 403
+    _ensure_procesado_excel_col()
+    with get_db_materiales() as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """SELECT id, codigo, descripcion, estado, operario_numero, fecha_asignacion
+               FROM materiales
+               WHERE estado IN ('gastado','retirado')
+                 AND (procesado_excel IS NULL OR procesado_excel = 0)
+               ORDER BY fecha_asignacion ASC"""
+        ).fetchall()
+    return jsonify({"pendientes": [dict(r) for r in rows]})
+
+@app.post("/api/marcar_procesado_excel/<int:mat_id>")
+def api_marcar_procesado_excel(mat_id):
+    """Marca un material como procesado en Excel. Solo admin."""
+    if current_role() != "admin":
+        return jsonify({"success": False}), 403
+    _ensure_procesado_excel_col()
+    with get_db_materiales() as conn:
+        conn.execute("UPDATE materiales SET procesado_excel = 1 WHERE id = ?", (mat_id,))
+    return jsonify({"success": True})
+
+@app.post("/api/marcar_procesado_excel_bulk")
+def api_marcar_procesado_excel_bulk():
+    """Marca varios materiales como procesados en Excel. Solo admin."""
+    if current_role() != "admin":
+        return jsonify({"success": False}), 403
+    ids = request.json.get("ids", [])
+    if not ids:
+        return jsonify({"success": False, "mensaje": "Sin IDs"}), 400
+    _ensure_procesado_excel_col()
+    with get_db_materiales() as conn:
+        conn.executemany(
+            "UPDATE materiales SET procesado_excel = 1 WHERE id = ?",
+            [(i,) for i in ids]
+        )
+    return jsonify({"success": True, "procesados": len(ids)})
+
+@app.get("/api/bajas")
+def api_bajas():
+    """Devuelve el historial de materiales dados de baja. Solo admin."""
+    if current_role() != "admin":
+        return jsonify({"success": False}), 403
+    _ensure_procesado_excel_col()
+    with get_db_materiales() as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """SELECT id, codigo, descripcion, estado_original, operario_numero, fecha_baja
+               FROM bajas
+               ORDER BY fecha_baja DESC"""
+        ).fetchall()
+    return jsonify({"bajas": [dict(r) for r in rows], "total": len(rows)})
+
 # ================== Actualización desde GitHub ==================
 @app.post("/api/admin/update")
 def api_admin_update():
@@ -4655,12 +4831,15 @@ if __name__ == "__main__":
     hostname = socket.gethostname()
     local_ip = socket.gethostbyname(hostname)
     
-    print(f"\n{'='*60}")
-    print(f"🚀 APLICACIÓN DE GESTIÓN DE MATERIALES INICIADA")
-    print(f"{'='*60}")
-    print(f"📡 Servidor ejecutándose en:")
-    print(f"   • Local: http://127.0.0.1:5000")
-    print(f"   • Red:   http://{local_ip}:5000")
+    import sys as _sys_enc
+    _out = open(_sys_enc.stdout.fileno(), mode='w', encoding='utf-8', buffering=1, closefd=False)
+    _out.write(f"\n{'='*60}\n")
+    _out.write(f"APLICACION DE GESTION DE MATERIALES INICIADA\n")
+    _out.write(f"{'='*60}\n")
+    _out.write(f"Servidor ejecutandose en:\n")
+    _out.write(f"   Local: http://127.0.0.1:5000\n")
+    _out.write(f"   Red:   http://{local_ip}:5000\n")
+    _out.flush()
 # ================== API CRUD Operarios ==================
 @app.route("/api/operarios", methods=["GET", "POST"])
 def api_operarios():
@@ -4728,21 +4907,16 @@ def api_toggle_operario(numero):
     return jsonify({"success": success, "mensaje": mensaje})
 
 if __name__ == "__main__":
-    print(f"{'='*60}")
-    print(f"🚀 INICIANDO SERVIDOR DE GESTIÓN DE MATERIALES")
-    print(f"{'='*60}")
-    print(f"📅 Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    
-    # Mostrar información de red
-    import socket
-    hostname = socket.gethostname()
-    local_ip = socket.gethostbyname(hostname)
-    
-    print(f"🌐 Servidor ejecutándose en:")
-    print(f"   - Local: http://localhost:5000")
-    print(f"   - Red local: http://{local_ip}:5000")
-    print(f"📋 Para acceder desde otros PCs usar: http://{local_ip}:5000")
-    print(f"⚠️  Asegúrese de que el puerto 5000 esté abierto en el firewall")
-    print(f"{'='*60}\n")
-    
+    import sys as _sys2, socket as _sock2
+    _o2 = open(_sys2.stdout.fileno(), mode='w', encoding='utf-8', buffering=1, closefd=False)
+    _o2.write(f"{'='*60}\n")
+    _o2.write(f"INICIANDO SERVIDOR DE GESTION DE MATERIALES\n")
+    _o2.write(f"{'='*60}\n")
+    _o2.write(f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+    _hn2 = _sock2.gethostname()
+    _ip2 = _sock2.gethostbyname(_hn2)
+    _o2.write(f"Servidor en: http://localhost:5000  |  http://{_ip2}:5000\n")
+    _o2.write(f"{'='*60}\n\n")
+    _o2.flush()
+
     app.run(host='0.0.0.0', port=5000, debug=False)

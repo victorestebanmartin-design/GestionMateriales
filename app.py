@@ -3253,7 +3253,7 @@ async function cargarEstadoAgente() {
       _iniciarPollingAgente();
     } else if (estado === 'procesando') {
       btnEnv.disabled = true; btnEnv.textContent = '⚙️ Procesando…';
-      btnCan.style.display = 'none';
+      btnCan.style.display = 'inline-flex'; btnCan.textContent = '✖ Detener proceso';
       output.style.display = 'block';
       output.textContent = 'El agente está procesando las bajas en Excel…';
       _iniciarPollingAgente();
@@ -3267,6 +3267,12 @@ async function cargarEstadoAgente() {
       btnEnv.disabled = false; btnEnv.textContent = '❌ Error — Reintentar';
       btnCan.style.display = 'none';
       output.style.display = 'block'; output.textContent = d.salida || 'Error desconocido';
+      _detenerPollingAgente();
+    } else if (estado === 'cancelado') {
+      btnEnv.disabled = false; btnEnv.textContent = '📡 Enviar al PC cliente';
+      btnCan.style.display = 'none';
+      output.style.display = 'block'; output.textContent = d.salida || 'Proceso detenido por el admin.';
+      cargarPendientesExcel();
       _detenerPollingAgente();
     }
   } catch(e) { console.error('Estado agente error:', e); }
@@ -4972,15 +4978,26 @@ def api_solicitar_bajas_cliente():
 
 @app.post("/api/admin/cancelar_solicitud_cliente")
 def api_cancelar_solicitud_cliente():
-    """Admin cancela la solicitud pendiente. Solo admin."""
+    """Admin cancela la solicitud (pendiente o procesando). Solo admin."""
     if current_role() != "admin":
         return jsonify({"success": False}), 403
     _ensure_solicitud_cliente_table()
     with get_db_materiales() as conn:
         conn.execute(
-            "UPDATE solicitud_excel_cliente SET estado='idle', salida='Cancelada por el admin' WHERE id=1"
+            "UPDATE solicitud_excel_cliente SET estado='cancelado', salida='Detenido por el admin' WHERE id=1"
         )
     return jsonify({"success": True})
+
+@app.get("/api/agente/cancelado")
+def api_agente_cancelado():
+    """El agente comprueba si su trabajo fue cancelado. Auth: Bearer."""
+    if not _check_agent_token():
+        return jsonify({"error": "Token inválido"}), 401
+    _ensure_solicitud_cliente_table()
+    with get_db_materiales() as conn:
+        row = conn.execute("SELECT estado FROM solicitud_excel_cliente WHERE id=1").fetchone()
+    cancelado = row and row[0] == "cancelado"
+    return jsonify({"cancelado": cancelado})
 
 @app.get("/api/agente/poll")
 def api_agente_poll():

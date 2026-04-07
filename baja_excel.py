@@ -427,24 +427,13 @@ def modo_semi_automatico(pendientes, xl):
         _copiar_portapapeles(m['codigo'])
         parar = threading.Event()
 
+        # ── Todos los ítems: automático (se trae MERAK KB a primer plano solo) ─
+        hilo = threading.Thread(target=_hilo_semi_auto, args=(m['codigo'], parar,), daemon=True)
+        hilo.start()
+
         if i == 1:
-            # ── Primer ítem: manual ──────────────────────────────────────────
-            print(f"\n  ╔══════════════════════════════════════════════════════╗")
-            print(f"  ║  ACCIÓN MANUAL REQUERIDA — solo esta vez             ║")
-            print(f"  ╠══════════════════════════════════════════════════════╣")
-            print(f"  ║  Código a procesar: {m['codigo']:<33}║")
-            print(f"  ║                                                      ║")
-            print(f"  ║  1. Pulsa el botón  DAR DE BAJA  del formulario      ║")
-            print(f"  ║  2. Sitúate en el campo de texto del formulario      ║")
-            print(f"  ║  3. Pega el código con  Ctrl+V  (ya está copiado)    ║")
-            print(f"  ║  4. Pulsa el botón  DAR DE BAJA                      ║")
-            print(f"  ║  5. Acepta el mensaje que aparece                    ║")
-            print(f"  ║  6. Pulsa  SALIR  — el modo automático arrancará     ║")
-            print(f"  ╚══════════════════════════════════════════════════════╝\n")
-        else:
-            # ── Ítems siguientes: automático ─────────────────────────────────
-            hilo = threading.Thread(target=_hilo_semi_auto, args=(m['codigo'], parar,), daemon=True)
-            hilo.start()
+            # Solo aviso en consola para el primero
+            print(f"         → Esperando formulario MERAK KB...")
 
         try:
             xl.Application.Run("DAR_DE_BAJA")

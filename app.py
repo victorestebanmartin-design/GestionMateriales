@@ -2324,7 +2324,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;margin:0;background:#f1f5f9;col
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:20px}
 .tile{background:#fff;border-radius:14px;padding:18px 16px;box-shadow:0 1px 4px rgba(0,0,0,.07);display:flex;flex-direction:column;gap:10px;border-top:3px solid #e2e8f0}
 .tile.amber{border-top-color:#f59e0b}.tile.cyan{border-top-color:#06b6d4}
-.tile.emerald{border-top-color:#10b981}.tile.rose{border-top-color:#f43f5e}.tile.indigo{border-top-color:#6366f1}
+.tile.emerald{border-top-color:#10b981}.tile.rose{border-top-color:#f43f5e}.tile.indigo{border-top-color:#6366f1}.tile.excel{border-top-color:#217346}
 .tile-title{font-size:13px;font-weight:700;color:#1e293b}
 .tile-desc{font-size:11px;color:#94a3b8;line-height:1.5;flex:1}
 .row2{display:grid;grid-template-columns:3fr 2fr;gap:20px;margin-bottom:20px;align-items:start}
@@ -2487,6 +2487,12 @@ hr.div{border:none;border-top:1px solid #f1f5f9;margin:16px 0}
       <div class="tile-title">✅ Dados de Baja</div>
       <div class="tile-desc" id="count-bajas">Cargando…</div>
       <button onclick="mostrarSeccionBajas()" class="btn btn-primary btn-full btn-sm">📋 Ver Historial</button>
+    </div>
+    <div class="tile excel">
+      <div class="tile-title">📊 Procesar Bajas en Excel</div>
+      <div class="tile-desc" id="count-pendientes-excel">Cargando…</div>
+      <button id="btn-ejecutar-excel" onclick="ejecutarBajasExcel()" class="btn btn-success btn-full btn-sm">▶️ Ejecutar en Excel</button>
+      <pre id="excel-output" style="display:none;margin-top:6px;background:#f1f5f9;border-radius:6px;padding:8px;font-size:11px;max-height:130px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;color:#1e293b"></pre>
     </div>
   </div>
 
@@ -3009,6 +3015,7 @@ document.addEventListener('DOMContentLoaded', function() {
   cargarOperarios();
   cargarContadorEscaneados();
   cargarContadorBajas();
+  cargarPendientesExcel();
 });
 
 // ── Actualización desde GitHub ─────────────────────────────────
@@ -3157,6 +3164,50 @@ async function cargarTablaBajas(filtro) {
       </tr>`).join('');
   } catch {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:18px;color:#ef4444">Error al cargar</td></tr>';
+  }
+}
+
+// ── Procesar Bajas en Excel ───────────────────────────────────
+async function cargarPendientesExcel() {
+  try {
+    const r = await fetch('/api/bajas_pendientes_excel');
+    const d = await r.json();
+    const n = (d.pendientes || []).length;
+    document.getElementById('count-pendientes-excel').textContent =
+      n === 0 ? 'Sin pendientes de procesar' :
+      n === 1 ? '1 pendiente de procesar en Excel' :
+      `${n} pendientes de procesar en Excel`;
+  } catch {
+    document.getElementById('count-pendientes-excel').textContent = 'Error al cargar';
+  }
+}
+
+async function ejecutarBajasExcel() {
+  const desc = document.getElementById('count-pendientes-excel').textContent;
+  if (!confirm(`¿Ejecutar el proceso de bajas en Excel?\n\n${desc}\n\nAsegúrate de que el archivo Excel con la macro DAR_DE_BAJA esté abierto.`)) return;
+  const btn = document.getElementById('btn-ejecutar-excel');
+  const output = document.getElementById('excel-output');
+  btn.disabled = true;
+  btn.textContent = '⏳ Procesando…';
+  output.style.display = 'block';
+  output.textContent = 'Iniciando proceso…';
+  try {
+    const r = await fetch('/api/admin/ejecutar_bajas_excel', { method: 'POST' });
+    const d = await r.json();
+    output.textContent = d.salida || '(sin salida)';
+    if (d.success) {
+      btn.textContent = '✅ Completado';
+      setTimeout(() => { btn.disabled = false; btn.textContent = '▶️ Ejecutar en Excel'; }, 4000);
+      cargarPendientesExcel();
+      cargarContadorBajas();
+    } else {
+      btn.textContent = '❌ Error — Reintentar';
+      btn.disabled = false;
+    }
+  } catch(e) {
+    output.textContent = 'Error de conexión: ' + e.message;
+    btn.textContent = '❌ Error — Reintentar';
+    btn.disabled = false;
   }
 }
 </script>
@@ -4754,6 +4805,28 @@ def api_bajas():
                ORDER BY fecha_baja DESC"""
         ).fetchall()
     return jsonify({"bajas": [dict(r) for r in rows], "total": len(rows)})
+
+@app.post("/api/admin/ejecutar_bajas_excel")
+def api_ejecutar_bajas_excel():
+    """Ejecuta baja_excel.py en modo automático. Solo admin."""
+    if current_role() != "admin":
+        return jsonify({"success": False, "salida": "Acceso denegado"}), 403
+    import subprocess, sys as _sys
+    script = os.path.join(BASE_DIR, "baja_excel.py")
+    try:
+        r = subprocess.run(
+            [_sys.executable, script],
+            cwd=BASE_DIR,
+            capture_output=True, text=True, timeout=180
+        )
+        salida = r.stdout.strip() or "(sin salida)"
+        if r.stderr.strip():
+            salida += "\n[stderr]\n" + r.stderr.strip()
+        return jsonify({"success": r.returncode == 0, "salida": salida})
+    except subprocess.TimeoutExpired:
+        return jsonify({"success": False, "salida": "Tiempo de espera agotado (180 s)."}), 500
+    except Exception as e:
+        return jsonify({"success": False, "salida": str(e)}), 500
 
 # ================== Actualización desde GitHub ==================
 @app.post("/api/admin/update")

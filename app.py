@@ -2163,12 +2163,16 @@ hr.div{border:none;border-top:1px solid #f1f5f9;margin:16px 0}
       <div style="font-size:10px;color:#64748b;margin-bottom:3px">O copia la ruta:</div>
       <div style="display:flex;gap:4px;align-items:center">
         <code style="font-size:10px;background:#f1f5f9;padding:3px 6px;border-radius:4px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">T:\Compartir\Produccion\GESTIÓN CADUCIDADES</code>
-        <button onclick="navigator.clipboard.writeText('T:\\Compartir\\Produccion\\GESTIÓN CADUCIDADES').then(()=>{this.textContent='✅';setTimeout(()=>this.textContent='📋',1500)})"
+        <button id="btn-cp-carpeta"
+                data-ruta="T:\Compartir\Produccion\GESTIÓN CADUCIDADES"
+                onclick="navigator.clipboard.writeText(this.dataset.ruta).then(()=>{var b=this;b.textContent='\u2705';setTimeout(()=>b.textContent='\ud83d\udccb',1500)})"
                 style="padding:3px 7px;border:1.5px solid #e2e8f0;border-radius:5px;background:#fff;cursor:pointer;font-size:12px;flex-shrink:0">📋</button>
       </div>
       <div style="display:flex;gap:4px;align-items:center;margin-top:4px">
-        <code style="font-size:10px;background:#f1f5f9;padding:3px 6px;border-radius:4px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Gestión de productos perecederos (19.09.2022)</code>
-        <button onclick="navigator.clipboard.writeText('T:\\Compartir\\Produccion\\GESTIÓN CADUCIDADES\\Gestión de productos perecederos (19.09.2022).xlsx').then(()=>{this.textContent='✅';setTimeout(()=>this.textContent='📋',1500)})"
+        <code style="font-size:10px;background:#f1f5f9;padding:3px 6px;border-radius:4px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Gestión de productos perecederos (19.09.2022).xlsx</code>
+        <button id="btn-cp-excel"
+                data-ruta="T:\Compartir\Produccion\GESTIÓN CADUCIDADES\Gestión de productos perecederos (19.09.2022).xlsx"
+                onclick="navigator.clipboard.writeText(this.dataset.ruta).then(()=>{var b=this;b.textContent='\u2705';setTimeout(()=>b.textContent='\ud83d\udccb',1500)})"
                 style="padding:3px 7px;border:1.5px solid #e2e8f0;border-radius:5px;background:#fff;cursor:pointer;font-size:12px;flex-shrink:0">📋</button>
       </div>
     </div>

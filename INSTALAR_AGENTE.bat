@@ -31,10 +31,14 @@ if errorlevel 1 (
     set "PATH=%LOCALAPPDATA%\Programs\Python\Python312;%LOCALAPPDATA%\Programs\Python\Python312\Scripts;%PATH%"
     python --version >nul 2>&1
     if errorlevel 1 (
-        echo  AVISO: Python instalado pero requiere reiniciar el terminal.
-        echo  Cierra esta ventana, abre una nueva y vuelve a ejecutar este bat.
+        echo.
+        echo ============================================================
+        echo   Python se ha instalado correctamente.
+        echo   Cierra esta ventana y vuelve a abrir INSTALAR_AGENTE.bat
+        echo   para que Windows reconozca el nuevo Python en el PATH.
+        echo ============================================================
         pause
-        exit /b 1
+        exit /b 0
     )
 )
 python --version

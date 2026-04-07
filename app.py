@@ -2502,6 +2502,12 @@ hr.div{border:none;border-top:1px solid #f1f5f9;margin:16px 0}
       <button id="btn-cancelar-agente" onclick="cancelarSolicitudAgente()" class="btn btn-ghost btn-full btn-sm" style="display:none;font-size:11px">✖ Cancelar solicitud</button>
       <pre id="agente-output" style="display:none;margin-top:6px;background:#f1f5f9;border-radius:6px;padding:8px;font-size:11px;max-height:100px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;color:#1e293b"></pre>
     </div>
+    <div class="tile" style="border-top-color:#8b5cf6">
+      <div class="tile-title">🛠️ Configurar Agente</div>
+      <div class="tile-desc">Descarga los archivos e instrucciones para instalar el agente en el PC cliente</div>
+      <button onclick="document.getElementById('seccion-agente-setup').scrollIntoView({behavior:'smooth'})" class="btn btn-full btn-sm" style="background:#8b5cf6;color:#fff">📖 Ver Instrucciones</button>
+      <a href="/admin/descargar_agente_zip" class="btn btn-ghost btn-full btn-sm" style="font-size:11px">⬇️ Descargar ZIP</a>
+    </div>
   </div>
 
   <!-- ════ 2-COL ROW ════ -->
@@ -3019,13 +3025,35 @@ async function exportarOperarios() {
 }
 
 // Cargar operarios al cargar la página
+// Rellenar IP del servidor e inicializar badge de la sección setup
+async function inicializarSeccionAgente() {
+  // IP del servidor
+  const ipTexto = document.getElementById('ip-servidor-texto');
+  if (ipTexto) {
+    ipTexto.textContent = window.location.host;
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   cargarOperarios();
   cargarContadorEscaneados();
   cargarContadorBajas();
   cargarPendientesExcel();
   cargarEstadoAgente();
+  inicializarSeccionAgente();
   setInterval(cargarEstadoAgente, 8000);
+  setInterval(() => {
+    // Sincronizar badge de la sección setup con el estado real del agente
+    const badgeTile = document.getElementById('agente-badge');
+    const badgeSetup = document.getElementById('agente-setup-badge');
+    const estadoSetup = document.getElementById('agente-setup-estado');
+    if (badgeTile && badgeSetup) {
+      badgeSetup.style.background = badgeTile.style.background;
+      const online = badgeTile.style.background.includes('34c55') || badgeTile.style.background === 'rgb(34, 197, 94)';
+      estadoSetup.textContent = online ? 'Agente conectado y escuchando' : 'Agente desconectado — ejecuta AGENTE_EXCEL.bat en el PC cliente';
+      estadoSetup.style.color = online ? '#166534' : '#475569';
+    }
+  }, 2000);
 });
 
 // ── Actualización desde GitHub ─────────────────────────────────
@@ -3336,8 +3364,82 @@ async function cancelarSolicitudAgente() {
   </div>
 </div>
 
-</body></html>
-"""
+<!-- ════ SECCIÓN AGENTE BAJAS EXCEL ════ -->
+<div id="seccion-agente-setup" class="card" style="margin-top:24px">
+  <div class="card-head" style="flex-wrap:wrap;gap:10px">
+    <h2 class="card-title">📡 Agente Bajas Excel — Configuración del PC cliente</h2>
+    <a href="/admin/descargar_agente_zip" class="btn btn-success btn-sm">⬇️ Descargar todo (ZIP)</a>
+  </div>
+
+  <p style="color:#475569;font-size:13px;margin:0 0 16px">
+    El agente es un pequeño programa que se ejecuta en el ordenador que tiene acceso al Excel compartido.
+    Escucha órdenes del servidor y procesa las bajas automáticamente cuando el admin lo indica desde este panel.
+  </p>
+
+  <!-- Pasos -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:20px">
+
+    <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:14px">
+      <div style="font-weight:700;color:#166534;margin-bottom:6px">① Copiar archivos al PC cliente</div>
+      <p style="font-size:12px;color:#15803d;margin:0 0 10px">Descarga el ZIP y extráelo en el escritorio del PC que tiene Excel. Crea una carpeta llamada <code>AgenteExcel</code>.</p>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <a href="/admin/descargar_agente_zip" class="btn btn-success btn-sm" style="justify-content:center">⬇️ Descargar ZIP completo</a>
+        <div style="font-size:11px;color:#16a34a;text-align:center">— o descarga por separado —</div>
+        <a href="/admin/descargar_agente/INSTALAR_AGENTE.bat" class="btn btn-ghost btn-sm" style="justify-content:center;font-size:11px">📄 INSTALAR_AGENTE.bat</a>
+        <a href="/admin/descargar_agente/AGENTE_EXCEL.bat" class="btn btn-ghost btn-sm" style="justify-content:center;font-size:11px">📄 AGENTE_EXCEL.bat</a>
+        <a href="/admin/descargar_agente/baja_excel_agente.py" class="btn btn-ghost btn-sm" style="justify-content:center;font-size:11px">📄 baja_excel_agente.py</a>
+        <a href="/admin/descargar_agente/baja_excel.py" class="btn btn-ghost btn-sm" style="justify-content:center;font-size:11px">📄 baja_excel.py</a>
+      </div>
+    </div>
+
+    <div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:10px;padding:14px">
+      <div style="font-weight:700;color:#1e40af;margin-bottom:6px">② Instalar Python y dependencias</div>
+      <p style="font-size:12px;color:#1d4ed8;margin:0 0 6px">En el PC cliente, si Python no está instalado:</p>
+      <ol style="font-size:12px;color:#1d4ed8;margin:0 0 8px;padding-left:18px;line-height:1.8">
+        <li>Descarga Python desde <strong>python.org/downloads</strong></li>
+        <li>Durante la instalación marca <strong>"Add Python to PATH"</strong></li>
+        <li>Doble clic en <strong>INSTALAR_AGENTE.bat</strong> — instala pywin32 y requests automáticamente</li>
+      </ol>
+      <div style="background:#dbeafe;border-radius:6px;padding:8px;font-size:11px;color:#1e40af">
+        ℹ️ Solo hay que hacer esto una vez por PC
+      </div>
+    </div>
+
+    <div style="background:#fdf4ff;border:1.5px solid #d8b4fe;border-radius:10px;padding:14px">
+      <div style="font-weight:700;color:#6b21a8;margin-bottom:6px">③ Arrancar el agente</div>
+      <ol style="font-size:12px;color:#7e22ce;margin:0 0 8px;padding-left:18px;line-height:1.8">
+        <li>Abre el Excel compartido con las <strong>macros habilitadas</strong></li>
+        <li>Doble clic en <strong>AGENTE_EXCEL.bat</strong></li>
+        <li>La primera vez te pide la <strong>IP del servidor</strong> y la <strong>contraseña admin</strong></li>
+        <li>Se queda en espera — ya no hace falta repetir este paso hasta cerrar la ventana</li>
+      </ol>
+      <div style="background:#f3e8ff;border-radius:6px;padding:8px;font-size:11px;color:#6b21a8">
+        💡 IP del servidor: <strong id="ip-servidor-texto">cargando…</strong>
+      </div>
+    </div>
+
+    <div style="background:#fff7ed;border:1.5px solid #fdba74;border-radius:10px;padding:14px">
+      <div style="font-weight:700;color:#9a3412;margin-bottom:6px">④ Usar desde este panel</div>
+      <ol style="font-size:12px;color:#c2410c;margin:0 0 8px;padding-left:18px;line-height:1.8">
+        <li>En el tile <strong>"📊 Procesar Bajas en Excel"</strong> verás el punto verde cuando el agente esté conectado</li>
+        <li>Pulsa <strong>"📡 Enviar al PC cliente"</strong></li>
+        <li>El agente procesa las bajas en Excel automáticamente</li>
+        <li>El historial se actualiza solo en <strong>"✅ Dados de Baja"</strong></li>
+      </ol>
+      <div style="background:#ffedd5;border-radius:6px;padding:8px;font-size:11px;color:#9a3412">
+        ⚠️ El Excel debe estar abierto y visible en el PC cliente mientras se procesa
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Estado actual del agente -->
+  <div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span id="agente-setup-badge" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#94a3b8;flex-shrink:0"></span>
+    <span id="agente-setup-estado" style="font-size:13px;font-weight:600;color:#475569">Comprobando estado del agente…</span>
+    <span id="agente-setup-ultimo" style="font-size:11px;color:#94a3b8;margin-left:auto"></span>
+  </div>
+</div>
 
 def tpl_estado():
     return """
@@ -5098,6 +5200,42 @@ def api_agente_error():
             (mensaje,)
         )
     return jsonify({"success": True})
+
+# ================== Descarga de archivos del agente ==================
+_ARCHIVOS_AGENTE = {
+    "baja_excel_agente.py": "baja_excel_agente.py",
+    "baja_excel.py":        "baja_excel.py",
+    "AGENTE_EXCEL.bat":     "AGENTE_EXCEL.bat",
+    "INSTALAR_AGENTE.bat":  "INSTALAR_AGENTE.bat",
+}
+
+@app.get("/admin/descargar_agente/<nombre>")
+def descargar_archivo_agente(nombre):
+    """Descarga uno de los archivos del agente. Solo admin."""
+    if current_role() != "admin":
+        abort(403)
+    if nombre not in _ARCHIVOS_AGENTE:
+        abort(404)
+    ruta = os.path.join(BASE_DIR, _ARCHIVOS_AGENTE[nombre])
+    if not os.path.isfile(ruta):
+        abort(404)
+    return send_file(ruta, as_attachment=True, download_name=nombre)
+
+@app.get("/admin/descargar_agente_zip")
+def descargar_agente_zip():
+    """Descarga todos los archivos del agente en un ZIP. Solo admin."""
+    if current_role() != "admin":
+        abort(403)
+    import zipfile, io
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for nombre, rel in _ARCHIVOS_AGENTE.items():
+            ruta = os.path.join(BASE_DIR, rel)
+            if os.path.isfile(ruta):
+                zf.write(ruta, nombre)
+    buf.seek(0)
+    return send_file(buf, as_attachment=True, download_name="agente_bajas_excel.zip",
+                     mimetype="application/zip")
 
 @app.post("/api/admin/limpiar_procesados_excel")
 def api_limpiar_procesados_excel():

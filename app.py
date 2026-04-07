@@ -2154,25 +2154,25 @@ hr.div{border:none;border-top:1px solid #f1f5f9;margin:16px 0}
       <a href="file:///T:/Compartir/Produccion/GESTI%C3%93N%20CADUCIDADES/"
          class="btn btn-full btn-sm"
          style="background:#0ea5e9;color:#fff;justify-content:center"
-         title="T:\Compartir\Produccion\GESTIÓN CADUCIDADES">📁 Abrir carpeta</a>
+         title="T:\\Compartir\\Produccion\\GESTI\u00d3N CADUCIDADES">📁 Abrir carpeta</a>
       <a href="file:///T:/Compartir/Produccion/GESTI%C3%93N%20CADUCIDADES/Gesti%C3%B3n%20de%20productos%20perecederos%20(19.09.2022).xlsx"
          class="btn btn-full btn-sm btn-ghost"
          style="justify-content:center;margin-top:4px;font-size:11px"
-         title="Gestión de productos perecederos (19.09.2022)">📊 Abrir Excel</a>
+         title="Gesti\u00f3n de productos perecederos (19.09.2022)">📊 Abrir Excel</a>
       <hr style="border:none;border-top:1px solid #e2e8f0;margin:6px 0">
       <div style="font-size:10px;color:#64748b;margin-bottom:3px">O copia la ruta:</div>
       <div style="display:flex;gap:4px;align-items:center">
-        <code style="font-size:10px;background:#f1f5f9;padding:3px 6px;border-radius:4px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">T:\Compartir\Produccion\GESTIÓN CADUCIDADES</code>
+        <code style="font-size:10px;background:#f1f5f9;padding:3px 6px;border-radius:4px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">T:\\Compartir\\Produccion\\GESTI\u00d3N CADUCIDADES</code>
         <button id="btn-cp-carpeta"
-                data-ruta="T:\Compartir\Produccion\GESTIÓN CADUCIDADES"
-                onclick="navigator.clipboard.writeText(this.dataset.ruta).then(()=>{var b=this;b.textContent='\u2705';setTimeout(()=>b.textContent='\ud83d\udccb',1500)})"
+                data-ruta="T:\\Compartir\\Produccion\\GESTIÓN CADUCIDADES"
+                onclick="navigator.clipboard.writeText(this.dataset.ruta).then(()=>{var b=this;b.textContent='\u2705';setTimeout(()=>b.textContent='\U0001F4CB',1500)})"
                 style="padding:3px 7px;border:1.5px solid #e2e8f0;border-radius:5px;background:#fff;cursor:pointer;font-size:12px;flex-shrink:0">📋</button>
       </div>
       <div style="display:flex;gap:4px;align-items:center;margin-top:4px">
         <code style="font-size:10px;background:#f1f5f9;padding:3px 6px;border-radius:4px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Gestión de productos perecederos (19.09.2022).xlsx</code>
         <button id="btn-cp-excel"
-                data-ruta="T:\Compartir\Produccion\GESTIÓN CADUCIDADES\Gestión de productos perecederos (19.09.2022).xlsx"
-                onclick="navigator.clipboard.writeText(this.dataset.ruta).then(()=>{var b=this;b.textContent='\u2705';setTimeout(()=>b.textContent='\ud83d\udccb',1500)})"
+                data-ruta="T:\\Compartir\\Produccion\\GESTIÓN CADUCIDADES\\Gestión de productos perecederos (19.09.2022).xlsx"
+                onclick="navigator.clipboard.writeText(this.dataset.ruta).then(()=>{var b=this;b.textContent='\u2705';setTimeout(()=>b.textContent='\U0001F4CB',1500)})"
                 style="padding:3px 7px;border:1.5px solid #e2e8f0;border-radius:5px;background:#fff;cursor:pointer;font-size:12px;flex-shrink:0">📋</button>
       </div>
     </div>

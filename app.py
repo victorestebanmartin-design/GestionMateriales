@@ -5043,7 +5043,7 @@ def api_agente_iniciar():
 
 @app.post("/api/agente/marcar_uno/<int:mat_id>")
 def api_agente_marcar_uno(mat_id):
-    """El agente reporta un material procesado individualmente. Auth: Bearer."""
+    """El agente reporta un material procesado: lo registra en bajas y lo elimina de materiales."""
     if not _check_agent_token():
         return jsonify({"error": "Token inválido"}), 401
     _ensure_procesado_excel_col()
@@ -5054,12 +5054,12 @@ def api_agente_marcar_uno(mat_id):
         ).fetchone()
         if not row:
             return jsonify({"success": False, "mensaje": "Material no encontrado"}), 404
-        conn.execute("UPDATE materiales SET procesado_excel=1 WHERE id=?", (mat_id,))
         conn.execute(
             """INSERT INTO bajas (codigo, descripcion, estado_original, operario_numero, fecha_baja)
                VALUES (?, ?, ?, ?, datetime('now','localtime'))""",
             (row[0], row[1], row[2], row[3])
         )
+        conn.execute("DELETE FROM materiales WHERE id=?", (mat_id,))
     return jsonify({"success": True})
 
 @app.post("/api/agente/completar")

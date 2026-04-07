@@ -15,14 +15,6 @@ except ImportError:
     EXCEL_DISPONIBLE = False
     print("Advertencia: openpyxl no está instalado. Funcionalidad Excel deshabilitada.")
 
-try:
-    import barcode
-    from barcode.writer import ImageWriter
-    BARCODE_DISPONIBLE = True
-except ImportError:
-    BARCODE_DISPONIBLE = False
-    print("Advertencia: python-barcode no está instalado. Los códigos se mostrarán como texto.")
-
 # ================== Config & logging ==================
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -575,46 +567,6 @@ def retirar_material(codigo: str)->bool:
         c.execute("UPDATE materiales SET estado='retirado', operario_numero=NULL WHERE codigo=?", (codigo,))
         return c.rowcount>0
 
-def escanear_material(codigo: str)->bool:
-    """Marca un material como escaneado (solo si está gastado o retirado)"""
-    with get_db() as conn:
-        c=conn.cursor()
-        c.execute("UPDATE materiales SET estado='escaneado' WHERE codigo=? AND (estado='gastado' OR estado='retirado')", (codigo,))
-        return c.rowcount>0
-
-def get_siguiente_material_para_escanear():
-    """Obtiene el siguiente material gastado o retirado para escanear (ordenado por fecha)"""
-    with get_db() as conn:
-        c=conn.cursor()
-        c.execute("""SELECT codigo, descripcion, estado, fecha_registro 
-                    FROM materiales 
-                    WHERE estado IN ('gastado', 'retirado') 
-                    ORDER BY fecha_registro ASC 
-                    LIMIT 1""")
-        row = c.fetchone()
-        if row:
-            return {
-                'codigo': row[0],
-                'descripcion': row[1],
-                'estado': row[2],
-                'fecha_registro': row[3]
-            }
-        return None
-
-def count_materiales_para_escanear():
-    """Cuenta cuántos materiales gastados/retirados quedan por escanear"""
-    with get_db() as conn:
-        c=conn.cursor()
-        c.execute("SELECT COUNT(*) FROM materiales WHERE estado IN ('gastado', 'retirado')")
-        return c.fetchone()[0]
-
-def count_materiales_escaneados():
-    """Cuenta cuántos materiales han sido escaneados"""
-    with get_db() as conn:
-        c=conn.cursor()
-        c.execute("SELECT COUNT(*) FROM materiales WHERE estado = 'escaneado'")
-        return c.fetchone()[0]
-
 def list_materiales_paged(estado_filter: Optional[str], q: str, offset: int, limit: int, operario_filter: str = "")->List[Material]:
     with get_db() as conn:
         c=conn.cursor()
@@ -773,6 +725,19 @@ def pwa_manifest():
     )
     return response
 
+@app.route('/sw.js')
+def pwa_service_worker():
+    sw = (
+        "self.addEventListener('install',e=>self.skipWaiting());\n"
+        "self.addEventListener('activate',e=>e.waitUntil(clients.claim()));\n"
+        "self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).catch(()=>caches.match(e.request))));\n"
+    )
+    return app.response_class(
+        response=sw,
+        mimetype='application/javascript',
+        headers={'Service-Worker-Allowed': '/'}
+    )
+
 @app.route('/favicon.ico')
 def favicon():
     icon_path = os.path.join(BASE_DIR, 'static', 'icons', 'icon-192.png')
@@ -919,94 +884,6 @@ def api_auth():
     except Exception as e:
         logger.error(f"Error en autenticación: {e}")
         return jsonify({'success': False, 'message': 'Error interno del servidor'})
-
-# ================== API para escaneo de bajas ==================
-@app.get("/api/siguiente_material_escanear")
-def api_siguiente_material_escanear():
-    """Obtiene el siguiente material para escanear"""
-    if current_role() != "admin":
-        return jsonify({"error": "Acceso denegado"}), 403
-    
-    material = get_siguiente_material_para_escanear()
-    pendientes = count_materiales_para_escanear()
-    
-    return jsonify({
-        "material": material,
-        "pendientes": pendientes
-    })
-
-@app.get("/api/barcode/<codigo>")
-def api_barcode(codigo):
-    """Genera una imagen de código de barras Code128"""
-    try:
-        if BARCODE_DISPONIBLE:
-            # Generar código de barras real
-            from barcode import Code128
-            from barcode.writer import ImageWriter
-            
-            # Crear código de barras con opciones optimizadas para escaneo
-            code = Code128(codigo, writer=ImageWriter())
-            
-            # Generar imagen en memoria con mejor calidad y tamaño
-            buffer = io.BytesIO()
-            code.write(buffer, options={
-                'module_width': 0.5,      # Barras más anchas (era 0.3)
-                'module_height': 25.0,    # Más alto (era 15.0)
-                'quiet_zone': 10.0,       # Más margen (era 6.5)
-                'font_size': 18,          # Texto más grande (era 14)
-                'text_distance': 8.0,     # Más espacio (era 5.0)
-                'write_text': True,       # Mostrar número debajo
-                'dpi': 300                # Alta resolución para mejor escaneo
-            })
-            buffer.seek(0)
-            
-            return send_file(buffer, mimetype='image/png')
-        else:
-            # Si no está disponible, devolver un SVG simple como fallback
-            svg = f'''<svg width="400" height="150" xmlns="http://www.w3.org/2000/svg">
-                <rect width="400" height="150" fill="white"/>
-                <text x="200" y="75" font-family="monospace" font-size="24" text-anchor="middle" fill="black">{codigo}</text>
-            </svg>'''
-            return svg, 200, {'Content-Type': 'image/svg+xml'}
-    except Exception as e:
-        logger.error(f"Error generando código de barras: {e}")
-        return "Error", 500
-
-@app.post("/api/marcar_escaneado")
-def api_marcar_escaneado():
-    """Marca un material como escaneado"""
-    if current_role() != "admin":
-        return jsonify({"error": "Acceso denegado"}), 403
-    
-    try:
-        data = request.get_json()
-        codigo = data.get('codigo', '').strip()
-        
-        if not codigo:
-            return jsonify({"success": False, "mensaje": "Código requerido"}), 400
-        
-        # Intentar marcar como escaneado
-        resultado = escanear_material(codigo)
-        
-        # Obtener siguiente y pendientes independientemente del resultado
-        pendientes = count_materiales_para_escanear()
-        siguiente = get_siguiente_material_para_escanear()
-        
-        # Siempre devolver success=True si se procesó correctamente
-        return jsonify({
-            "success": True,
-            "mensaje": f"Material {codigo} procesado",
-            "pendientes": pendientes,
-            "siguiente": siguiente,
-            "actualizado": resultado
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Error al marcar escaneado: {e}")
-        return jsonify({
-            "success": False,
-            "mensaje": f"Error interno: {str(e)}"
-        }), 500
 
 # Info material para asignación (alertas vence/caduca)
 @app.get("/api/info_material")
@@ -1878,16 +1755,6 @@ def switch_to_herramientas():
     session['app_origen'] = 'materiales'
     return redirect("http://localhost:5001")
 
-# ================== Escaneo de bajas ==================
-@app.route("/admin/escanear_bajas")
-def escanear_bajas():
-    """Página para escanear materiales gastados/retirados y marcarlos como escaneados"""
-    if current_role() != "admin":
-        flash("Acceso denegado", "error")
-        return redirect(url_for("home"))
-    
-    return render_template_string(tpl_escanear_bajas())
-
 # ================== Home ==================
 @app.route("/", methods=["GET","POST"])
 def home():
@@ -2128,19 +1995,7 @@ button:hover{background:#0069d9}
 </body></html>
 """
 
-def tpl_escanear_bajas():
-    return """
-<!doctype html><html><head><meta charset="utf-8"><title>Escanear Bajas</title>
-<style>
-body{font-family:Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:0;background:#f8f9fa;height:100vh;display:flex;align-items:center;justify-content:center}
-.container{max-width:1000px;width:95%;background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.15);padding:40px;text-align:center}
-h1{margin:0 0 20px;color:#2c3e50;font-size:32px}
-.barcode-container{background:#fff;border:3px solid #007bff;border-radius:12px;padding:50px;margin:30px 0;min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.barcode-container img{max-width:100%;height:auto;image-rendering:crisp-edges;image-rendering:-moz-crisp-edges;image-rendering:-webkit-optimize-contrast}
-.codigo-texto{font-size:36px;font-weight:700;color:#2c3e50;margin:20px 0;letter-spacing:3px;font-family:monospace}
-.contador{font-size:20px;color:#6c757d;margin:15px 0;font-weight:600}
-.completado{color:#28a745;font-size:24px;font-weight:700;margin:20px 0}
-.instrucciones{background:#e3f2fd;padding:20px;border-radius:8px;margin:20px 0;color:#1565c0;font-size:16px;line-height:1.6}
+def tpl_admin():
 .btn-volver{display:inline-block;padding:15px 30px;background:#007bff;color:#fff;border:none;border-radius:10px;font-size:18px;cursor:pointer;text-decoration:none;margin-top:20px}
 .btn-volver:hover{background:#0056b3}
 #loading{display:none;font-size:18px;color:#6c757d}
@@ -2455,16 +2310,6 @@ hr.div{border:none;border-top:1px solid #f1f5f9;margin:16px 0}
 
   <!-- ════ QUICK TILES ════ -->
   <div class="tiles">
-    <div class="tile amber">
-      <div class="tile-title">📦 Escanear Bajas</div>
-      <div class="tile-desc">Escanea materiales gastados o retirados con la pistola lectora</div>
-      <a href="/admin/escanear_bajas" class="btn btn-warning btn-full btn-sm">🔍 Iniciar Escaneo</a>
-    </div>
-    <div class="tile cyan">
-      <div class="tile-title">📋 Ver Escaneados</div>
-      <div class="tile-desc" id="count-escaneados">Cargando…</div>
-      <a href="/estado/escaneado" class="btn btn-info btn-full btn-sm">👁️ Ver Lista</a>
-    </div>
     <div class="tile emerald">
       <div class="tile-title">📈 Exportar y Limpiar</div>
       <div class="tile-desc">Exporta gastados/retirados a Excel y los elimina de la BD</div>
@@ -3036,7 +2881,6 @@ async function inicializarSeccionAgente() {
 
 document.addEventListener('DOMContentLoaded', function() {
   cargarOperarios();
-  cargarContadorEscaneados();
   cargarContadorBajas();
   cargarPendientesExcel();
   cargarEstadoAgente();
@@ -3127,21 +2971,6 @@ async function reiniciarApp() {
       btn.onclick = () => window.location.reload();
     }
   }, 500);
-}
-
-// Cargar contador de materiales escaneados
-async function cargarContadorEscaneados() {
-  try {
-    const response = await fetch('/api/contadores');
-    const data = await response.json();
-    const escaneados = data.escaneado || 0;
-    document.getElementById('count-escaneados').textContent = 
-      escaneados === 0 ? 'No hay materiales escaneados' : 
-      escaneados === 1 ? '1 material escaneado' : 
-      `${escaneados} materiales escaneados`;
-  } catch (error) {
-    document.getElementById('count-escaneados').textContent = 'Error al cargar';
-  }
 }
 
 // ── Dados de Baja ──────────────────────────────────────────────
@@ -4880,6 +4709,13 @@ document.addEventListener('click', e=>{
   });
   resetTimer();
 })();
+
+// ---- Service Worker (PWA install prompt) ----
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
 </script>
 </body></html>
 """

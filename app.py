@@ -5303,6 +5303,31 @@ def api_admin_update():
     except subprocess.TimeoutExpired:
         return jsonify({"success": False, "mensaje": "Tiempo de espera agotado al contactar GitHub."}), 500
 
+    # ── Validación sintáctica de app.py ──────────────────────────
+    app_py = os.path.join(BASE_DIR, "app.py")
+    output_lines.append("")
+    output_lines.append("── validación sintáctica ──")
+    chk = subprocess.run(
+        [_sys.executable, "-m", "py_compile", app_py],
+        capture_output=True, text=True
+    )
+    if chk.returncode != 0:
+        # Revertir solo app.py a la versión anterior
+        subprocess.run(
+            ["git", "checkout", "HEAD~1", "--", "app.py"],
+            cwd=BASE_DIR, capture_output=True
+        )
+        error_msg = (chk.stderr.strip() or "Error de sintaxis desconocido")
+        output_lines.append(f"❌ Error de sintaxis detectado — app.py REVERTIDO")
+        output_lines.append(error_msg)
+        return jsonify({
+            "success": False,
+            "hubo_cambios": hubo_cambios,
+            "mensaje": f"Error de sintaxis en app.py. Revertido automáticamente.\n{error_msg}",
+            "output": "\n".join(output_lines)
+        }), 200
+    output_lines.append("✅ app.py sin errores de sintaxis")
+
     # pip install si hubo cambios en requirements
     output_lines.append("")
     output_lines.append("── pip install ──")

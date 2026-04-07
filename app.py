@@ -2045,7 +2045,7 @@ button:hover{background:#0069d9}
     function mostrarDialogoError(mensaje) {
         const overlay = document.createElement('div');
         overlay.id = 'error-dialog-overlay';
-        overlay.style.cssText = \`
+        overlay.style.cssText = `
             position: fixed;
             top: 0;
             left: 0;
@@ -2056,10 +2056,10 @@ button:hover{background:#0069d9}
             display: flex;
             align-items: center;
             justify-content: center;
-        \`;
+        `;
         
         const dialog = document.createElement('div');
-        dialog.style.cssText = \`
+        dialog.style.cssText = `
             background: white;
             padding: 20px;
             border-radius: 10px;
@@ -2067,14 +2067,14 @@ button:hover{background:#0069d9}
             max-width: 400px;
             text-align: center;
             font-family: inherit;
-        \`;
+        `;
         
-        dialog.innerHTML = \`
+        dialog.innerHTML = `
             <div style="color: #721c24; font-size: 18px; margin-bottom: 15px;">
                 ❌ Error
             </div>
             <div style="color: #721c24; margin-bottom: 20px; line-height: 1.4;">
-                \${mensaje}
+                ${mensaje}
             </div>
             <button id="error-dialog-btn" onclick="cerrarDialogoError()" style="
                 background: #dc3545;
@@ -2085,7 +2085,7 @@ button:hover{background:#0069d9}
                 cursor: pointer;
                 font-size: 14px;
             ">Aceptar</button>
-        \`;
+        `;
         
         overlay.appendChild(dialog);
         document.body.appendChild(overlay);
@@ -2389,7 +2389,7 @@ hr.div{border:none;border-top:1px solid #f1f5f9;margin:16px 0}
     function mostrarDialogoError(mensaje) {
         const overlay = document.createElement('div');
         overlay.id = 'error-dialog-overlay';
-        overlay.style.cssText = \`
+        overlay.style.cssText = `
             position: fixed;
             top: 0;
             left: 0;
@@ -2400,10 +2400,10 @@ hr.div{border:none;border-top:1px solid #f1f5f9;margin:16px 0}
             display: flex;
             align-items: center;
             justify-content: center;
-        \`;
+        `;
         
         const dialog = document.createElement('div');
-        dialog.style.cssText = \`
+        dialog.style.cssText = `
             background: white;
             padding: 20px;
             border-radius: 10px;
@@ -2411,14 +2411,14 @@ hr.div{border:none;border-top:1px solid #f1f5f9;margin:16px 0}
             max-width: 400px;
             text-align: center;
             font-family: inherit;
-        \`;
+        `;
         
-        dialog.innerHTML = \`
+        dialog.innerHTML = `
             <div style="color: #721c24; font-size: 18px; margin-bottom: 15px;">
                 ❌ Error
             </div>
             <div style="color: #721c24; margin-bottom: 20px; line-height: 1.4;">
-                \${mensaje}
+                ${mensaje}
             </div>
             <button id="error-dialog-btn" onclick="cerrarDialogoError()" style="
                 background: #dc3545;
@@ -2429,7 +2429,7 @@ hr.div{border:none;border-top:1px solid #f1f5f9;margin:16px 0}
                 cursor: pointer;
                 font-size: 14px;
             ">Aceptar</button>
-        \`;
+        `;
         
         overlay.appendChild(dialog);
         document.body.appendChild(overlay);
@@ -3440,6 +3440,7 @@ async function cancelarSolicitudAgente() {
     <span id="agente-setup-ultimo" style="font-size:11px;color:#94a3b8;margin-left:auto"></span>
   </div>
 </div>
+"""
 
 def tpl_estado():
     return """

@@ -5041,16 +5041,35 @@ def api_agente_iniciar():
         conn.execute("UPDATE solicitud_excel_cliente SET estado='procesando' WHERE id=1")
     return jsonify({"success": True})
 
+@app.post("/api/agente/marcar_uno/<int:mat_id>")
+def api_agente_marcar_uno(mat_id):
+    """El agente reporta un material procesado individualmente. Auth: Bearer."""
+    if not _check_agent_token():
+        return jsonify({"error": "Token inválido"}), 401
+    _ensure_procesado_excel_col()
+    with get_db_materiales() as conn:
+        row = conn.execute(
+            "SELECT codigo, descripcion, estado, operario_numero FROM materiales WHERE id=?",
+            (mat_id,)
+        ).fetchone()
+        if not row:
+            return jsonify({"success": False, "mensaje": "Material no encontrado"}), 404
+        conn.execute("UPDATE materiales SET procesado_excel=1 WHERE id=?", (mat_id,))
+        conn.execute(
+            """INSERT INTO bajas (codigo, descripcion, estado_original, operario_numero, fecha_baja)
+               VALUES (?, ?, ?, ?, datetime('now','localtime'))""",
+            (row[0], row[1], row[2], row[3])
+        )
+    return jsonify({"success": True})
+
 @app.post("/api/agente/completar")
 def api_agente_completar():
-    """El agente reporta la finalización y marca materiales como procesados."""
+    """El agente reporta la finalización. Los materiales ya fueron marcados por marcar_uno."""
     if not _check_agent_token():
         return jsonify({"error": "Token inválido"}), 401
     data = request.json or {}
     salida = data.get("salida", "")
-    ids_procesados = data.get("ids_procesados", [])
     _ensure_solicitud_cliente_table()
-    _ensure_procesado_excel_col()
     with get_db_materiales() as conn:
         conn.execute(
             """UPDATE solicitud_excel_cliente
@@ -5058,18 +5077,6 @@ def api_agente_completar():
                WHERE id=1""",
             (salida,)
         )
-        for mid in ids_procesados:
-            row = conn.execute(
-                "SELECT codigo, descripcion, estado, operario_numero FROM materiales WHERE id=?",
-                (mid,)
-            ).fetchone()
-            conn.execute("UPDATE materiales SET procesado_excel=1 WHERE id=?", (mid,))
-            if row:
-                conn.execute(
-                    """INSERT INTO bajas (codigo, descripcion, estado_original, operario_numero, fecha_baja)
-                       VALUES (?, ?, ?, ?, datetime('now','localtime'))""",
-                    (row[0], row[1], row[2], row[3])
-                )
     return jsonify({"success": True})
 
 @app.post("/api/agente/error")

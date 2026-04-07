@@ -2148,6 +2148,18 @@ hr.div{border:none;border-top:1px solid #f1f5f9;margin:16px 0}
 
   <!-- ════ QUICK TILES ════ -->
   <div class="tiles">
+    <div class="tile" style="border-top-color:#0ea5e9">
+      <div class="tile-title">📂 Carpeta Caducidades</div>
+      <div class="tile-desc">Abre la carpeta de gestión de productos perecederos</div>
+      <a href="file:///T:/Compartir/Produccion/GESTI%C3%93N%20CADUCIDADES/"
+         class="btn btn-full btn-sm"
+         style="background:#0ea5e9;color:#fff;justify-content:center"
+         title="T:\Compartir\Produccion\GESTIÓN CADUCIDADES">📁 Abrir carpeta</a>
+      <a href="file:///T:/Compartir/Produccion/GESTI%C3%93N%20CADUCIDADES/Gesti%C3%B3n%20de%20productos%20perecederos%20(19.09.2022).xlsx"
+         class="btn btn-full btn-sm btn-ghost"
+         style="justify-content:center;margin-top:4px;font-size:11px"
+         title="Gestión de productos perecederos (19.09.2022)">📊 Abrir Excel</a>
+    </div>
     <div class="tile emerald">
       <div class="tile-title">📈 Exportar y Limpiar</div>
       <div class="tile-desc">Exporta gastados/retirados a Excel y los elimina de la BD</div>

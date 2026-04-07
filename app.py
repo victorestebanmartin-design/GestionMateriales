@@ -1063,7 +1063,7 @@ def get_productos_caducados_total():
 def api_contadores():
     with get_db() as conn:
         c = conn.cursor()
-        c.execute("SELECT codigo, caducidad, estado, operario_numero, descripcion FROM materiales")
+        c.execute("SELECT codigo, caducidad, estado, operario_numero, descripcion FROM materiales WHERE (procesado_excel IS NULL OR procesado_excel = 0)")
         rows = c.fetchall()
     from collections import Counter
     ctr = Counter()
@@ -4826,7 +4826,7 @@ def api_hora_servidor():
 
 # ================== Bajas pendientes Excel ==================
 def _ensure_procesado_excel_col():
-    """Migración: añade la columna procesado_excel y crea la tabla bajas si no existen."""
+    """Migración: añade la columna procesado_excel, crea la tabla bajas y limpia registros huérfanos."""
     with get_db_materiales() as conn:
         try:
             conn.execute("ALTER TABLE materiales ADD COLUMN procesado_excel INTEGER DEFAULT 0")
@@ -4841,6 +4841,10 @@ def _ensure_procesado_excel_col():
                 operario_numero TEXT,
                 fecha_baja      TEXT DEFAULT (datetime('now','localtime'))
             )"""
+        )
+        # Limpiar materiales ya procesados en Excel que no se borraron (registros huérfanos)
+        conn.execute(
+            "DELETE FROM materiales WHERE procesado_excel = 1 AND estado IN ('gastado', 'retirado')"
         )
 
 @app.get("/api/bajas_pendientes_excel")
@@ -5094,6 +5098,19 @@ def api_agente_error():
             (mensaje,)
         )
     return jsonify({"success": True})
+
+@app.post("/api/admin/limpiar_procesados_excel")
+def api_limpiar_procesados_excel():
+    """Elimina de materiales los registros ya marcados como procesado_excel=1. Solo admin."""
+    if current_role() != "admin":
+        return jsonify({"success": False}), 403
+    _ensure_procesado_excel_col()
+    with get_db_materiales() as conn:
+        cur = conn.execute(
+            "DELETE FROM materiales WHERE procesado_excel = 1 AND estado IN ('gastado', 'retirado')"
+        )
+        eliminados = cur.rowcount
+    return jsonify({"success": True, "eliminados": eliminados})
 
 @app.post("/api/admin/ejecutar_bajas_excel")
 def api_ejecutar_bajas_excel():

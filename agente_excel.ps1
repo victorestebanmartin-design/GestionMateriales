@@ -4,14 +4,25 @@
 
 param(
     [string]$PythonPath = "python",
+    [string]$ScriptDir  = "",
     [switch]$Config
 )
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $ErrorActionPreference = "SilentlyContinue"
 
-$scriptDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
-$configFile = Join-Path $scriptDir "agente_config.json"
+# Al ejecutar como ScriptBlock, $MyInvocation.MyCommand.Path queda vacio.
+# El BAT pasa -ScriptDir explicitamente para evitar este problema.
+if (-not $ScriptDir) {
+    $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+}
+if (-not $ScriptDir) {
+    $ScriptDir = $PSScriptRoot
+}
+if (-not $ScriptDir) {
+    $ScriptDir = (Get-Location).Path
+}
+$configFile = Join-Path $ScriptDir "agente_config.json"
 $pyScript   = Join-Path $scriptDir "baja_excel_agente.py"
 $POLL_SEC   = 5
 
@@ -26,8 +37,9 @@ function Get-AgentConfig {
 }
 
 function Save-AgentConfig($url, $token) {
-    [PSCustomObject]@{ server_url = $url; token = $token } |
-        ConvertTo-Json | Set-Content $configFile -Encoding UTF8
+    $json = [PSCustomObject]@{ server_url = $url; token = $token } | ConvertTo-Json
+    # Guardar sin BOM para evitar que ConvertFrom-Json falle silenciosamente
+    [System.IO.File]::WriteAllText($configFile, $json, [System.Text.Encoding]::UTF8)
 }
 
 function Read-AgentConfig {
@@ -39,6 +51,9 @@ function Read-AgentConfig {
     Write-Host ""
     Write-Host "  Ejemplo de URL: http://192.168.1.103:5000"
     $url = (Read-Host "  URL del servidor").Trim().TrimEnd("/")
+    # Limpiar errores tipicos: puntos antes de ':', espacios, barras dobles
+    $url = $url -replace '\.:', ':'
+    $url = $url.Trim('.')
     if (-not $url.StartsWith("http")) { $url = "http://$url" }
     $token = (Read-Host "  Contrasena admin (o numero de usuario admin)").Trim()
     Save-AgentConfig $url $token

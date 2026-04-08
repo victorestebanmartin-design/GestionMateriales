@@ -50,7 +50,8 @@ if /i "%1"=="--config" set CONFIG_FLAG=-Config
 
 REM Cargar el PS1 como texto y ejecutarlo como ScriptBlock:
 REM usando -Command en lugar de -File se evita la politica de firma corporativa.
-powershell -NoProfile -Command "& ([ScriptBlock]::Create([System.IO.File]::ReadAllText('%~dp0agente_excel.ps1'))) -PythonPath '%PYTHON_PATH%' %CONFIG_FLAG%"
+REM Se pasa ScriptDir explicitamente porque $MyInvocation.MyCommand.Path queda vacio en ScriptBlock.
+powershell -NoProfile -Command "& ([ScriptBlock]::Create([System.IO.File]::ReadAllText('%~dp0agente_excel.ps1'))) -PythonPath '%PYTHON_PATH%' -ScriptDir '%~dp0' %CONFIG_FLAG%"
 
 echo.
 echo  El agente se ha detenido.

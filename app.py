@@ -4908,6 +4908,7 @@ def api_agente_error():
 _ARCHIVOS_AGENTE = {
     "baja_excel_agente.py": "baja_excel_agente.py",
     "baja_excel.py":        "baja_excel.py",
+    "agente_excel.ps1":     "agente_excel.ps1",
     "AGENTE_EXCEL.bat":     "AGENTE_EXCEL.bat",
     "INSTALAR_AGENTE.bat":  "INSTALAR_AGENTE.bat",
 }

@@ -44,10 +44,13 @@ echo  Iniciando agente (HTTP via PowerShell, Excel via Python)...
 echo  (Pulsa Ctrl+C para detener)
 echo.
 
-REM ── Lanzar PS1 con ExecutionPolicy Bypass (no requiere admin) ──
-REM    PowerShell hace las llamadas HTTP al servidor.
-REM    Python solo automatiza Excel localmente (sin red).
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0agente_excel.ps1" -PythonPath "%PYTHON_PATH%" %*
+REM Pasar --config si fue el primer argumento
+set CONFIG_FLAG=
+if /i "%1"=="--config" set CONFIG_FLAG=-Config
+
+REM Cargar el PS1 como texto y ejecutarlo como ScriptBlock:
+REM usando -Command en lugar de -File se evita la politica de firma corporativa.
+powershell -NoProfile -Command "& ([ScriptBlock]::Create([System.IO.File]::ReadAllText('%~dp0agente_excel.ps1'))) -PythonPath '%PYTHON_PATH%' %CONFIG_FLAG%"
 
 echo.
 echo  El agente se ha detenido.

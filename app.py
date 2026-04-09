@@ -2978,7 +2978,7 @@ async function procesarEnEstePC() {
 
   // ── Paso 0: obtener pendientes antes del aviso ──────────────────
   output.style.display = 'block';
-  output.textContent   = 'Consultando pendientes…';
+  output.textContent   = 'Consultando pendientes\u2026';
   btn.disabled = true;
   let pendientes = [];
   try {
@@ -2986,7 +2986,7 @@ async function procesarEnEstePC() {
     const d = await r.json();
     pendientes = d.pendientes || [];
   } catch(e) {
-    output.textContent = '❌ Error al obtener pendientes: ' + e.message;
+    output.textContent = '\u274c Error al obtener pendientes: ' + e.message;
     btn.disabled = false; return;
   }
   if (pendientes.length === 0) {
@@ -2996,28 +2996,28 @@ async function procesarEnEstePC() {
 
   // ── Paso 1: aviso + confirmación ────────────────────────────────
   const confirmado = confirm(
-    '⚠️  PROCESO DE BAJAS EN EXCEL\n\n' +
-    'Se van a procesar ' + pendientes.length + ' baja(s).\n\n' +
-    'ANTES DE CONTINUAR:\n' +
-    '  1. Asegúrate de que el Excel con la macro DAR_DE_BAJA está abierto.\n' +
-    '  2. Pon la ventana de Excel en primer plano.\n' +
-    '  3. NO muevas el ratón ni uses el teclado hasta que\n' +
-    '     aparezca el mensaje de finalización.\n\n' +
-    '¿Continuar?'
+    '\u26a0\ufe0f  PROCESO DE BAJAS EN EXCEL\\n\\n' +
+    'Se van a procesar ' + pendientes.length + ' baja(s).\\n\\n' +
+    'ANTES DE CONTINUAR:\\n' +
+    '  1. Aseg\u00farate de que el Excel con la macro DAR_DE_BAJA est\u00e1 abierto.\\n' +
+    '  2. Pon la ventana de Excel en primer plano.\\n' +
+    '  3. NO muevas el rat\u00f3n ni uses el teclado hasta que\\n' +
+    '     aparezca el mensaje de finalizaci\u00f3n.\\n\\n' +
+    '\u00bfContinuar?'
   );
   if (!confirmado) { btn.disabled = false; output.style.display = 'none'; return; }
 
   // ── Paso 2: cuenta atrás ────────────────────────────────────────
   for (let i = 5; i >= 1; i--) {
-    output.textContent = '⏳ Iniciando en ' + i + '… — Pon Excel en primer plano y NO toques nada.';
+    output.textContent = '\u23f3 Iniciando en ' + i + '\u2026  Pon Excel en primer plano y NO toques nada.';
     await new Promise(res => setTimeout(res, 1000));
   }
 
   // ── Paso 3: procesar ───────────────────────────────────────────
-  output.textContent = 'Procesando ' + pendientes.length + ' baja(s)…\n';
+  output.textContent = 'Procesando ' + pendientes.length + ' baja(s)\u2026\\n';
   let ok = 0, ko = 0;
   for (const m of pendientes) {
-    output.textContent += '  ' + m.codigo + ' (' + m.estado + ')… ';
+    output.textContent += '  ' + m.codigo + ' (' + m.estado + ')\u2026 ';
     try {
       const r2 = await fetch('http://127.0.0.1:8765/ejecutar', {
         method: 'POST',
@@ -3028,23 +3028,23 @@ async function procesarEnEstePC() {
       if (d2.ok) {
         await fetch('/api/local/marcar_baja/' + m.id, {method: 'POST'});
         ok++;
-        output.textContent += '✓\n';
+        output.textContent += '\u2713\\n';
       } else {
         ko++;
-        output.textContent += '✗ ' + (d2.error || 'error Excel') + '\n';
+        output.textContent += '\u2717 ' + (d2.error || 'error Excel') + '\\n';
       }
     } catch(e) {
       ko++;
-      output.textContent += '✗ ' + e.message + '\n';
+      output.textContent += '\u2717 ' + e.message + '\\n';
     }
     output.scrollTop = output.scrollHeight;
     await new Promise(res => setTimeout(res, 1500));
   }
 
   // ── Paso 4: finalización ────────────────────────────────────────
-  const resumen = (ok > 0 ? '✅ ' + ok + ' procesada(s) correctamente' : '') +
-                  (ko > 0 ? '\n❌ ' + ko + ' con error' : '');
-  output.textContent += '\n' + resumen + '\n\n✔ Proceso finalizado — ya puedes usar el ratón.';
+  const resumen = (ok > 0 ? '\u2705 ' + ok + ' procesada(s) correctamente' : '') +
+                  (ko > 0 ? '\\n\u274c ' + ko + ' con error' : '');
+  output.textContent += '\\n' + resumen + '\\n\\n\u2714 Proceso finalizado \u2014 ya puedes usar el rat\u00f3n.';
   output.scrollTop = output.scrollHeight;
   btn.disabled = false;
   if (ok > 0) { cargarPendientesExcel(); cargarContadorBajas(); }

@@ -1,43 +1,45 @@
 #!/usr/bin/env python3
 """
-Automatización LOCAL de Excel — sin acceso a red.
+Agente Bajas Excel — servidor HTTP local en 127.0.0.1:8765
 
-Este script es llamado por agente_excel.ps1 para cada baja.
-PowerShell gestiona el HTTP; Python solo automatiza Excel via COM (IPC local).
+Python NUNCA hace conexiones de red salientes.
+Solo escucha en localhost — el EDR/firewall no lo ve.
+El navegador (admin panel) actúa de puente:
+  - Pide pendientes al servidor  (mismo origen, libre)
+  - POST a localhost:8765/ejecutar (loopback, libre)
+  - Confirma cada baja al servidor (mismo origen, libre)
 
-Uso (llamado desde agente_excel.ps1):
-    python baja_excel_agente.py --codigo 1234567 --estado gastado
-
-Exit code: 0 = OK, 1 = error
+Uso: python baja_excel_agente.py
+     python baja_excel_agente.py --puerto 8765
 """
 
 import sys
 import os
 import time
+import json
 import argparse
 import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
+PORT = 8765
 MAPEO_ESTADO = {
     "gastado":  1,
     "retirado": 1,
 }
 
 
-# ── Automatización Excel (COM local, sin red) ─────────────────────────────────
+# ── Automatización Excel ──────────────────────────────────────────────────────
 
 def get_excel_instance():
+    """Devuelve (xl_object, None) o (None, error_string)."""
     try:
         import win32com.client
         xl = win32com.client.GetActiveObject("Excel.Application")
-        return xl
+        return xl, None
     except ImportError:
-        print("[ERROR] pywin32 no está instalado.")
-        print("        Ejecuta INSTALAR_AGENTE.bat primero.")
-        sys.exit(1)
+        return None, "pywin32 no instalado — ejecuta INSTALAR_AGENTE.bat"
     except Exception:
-        print("[ERROR] No se encontró Excel abierto.")
-        print("        Abre el archivo Excel con la macro DAR_DE_BAJA antes de ejecutar este script.")
-        return None
+        return None, "Excel no está abierto — ábrelo con la macro DAR_DE_BAJA"
 
 
 def _activar_dialogo_excel(texto_titulo, timeout=4.0):
@@ -249,46 +251,125 @@ def ejecutar_baja_excel(xl, codigo, estado):
             shell.SendKeys("{ENTER}", 0)
         _click_boton_aceptar(timeout=8.0)
 
-    # Intentar flujo MERAK KB primero
     hilo_semi = threading.Thread(target=_hilo_semi_auto, args=(codigo, parar), daemon=True)
     hilo_semi.start()
-
     t = threading.Thread(target=_enviar_secuencia, daemon=True)
     t.start()
 
     try:
         xl.Application.Run("DAR_DE_BAJA")
         parar.set()
-        return True
+        return True, None
     except Exception as e:
         parar.set()
         err = str(e)
         if "-2146788248" in err:
-            print(f"         [i] Código no encontrado en Excel — marcando como procesado.")
-            return True
-        print(f"         [!] Error al ejecutar macro: {e}")
-        return False
+            return True, None   # código no encontrado = ya estaba dado de baja
+        return False, str(e)
 
 
-# ── Entrada ───────────────────────────────────────────────────────────────────
+# ── Servidor HTTP local ───────────────────────────────────────────────────────
+
+class AgenteHandler(BaseHTTPRequestHandler):
+
+    def log_message(self, fmt, *args):
+        # Solo mostrar en consola si no es el poll de Chrome
+        if "/status" not in (args[0] if args else ""):
+            print(f"  [{self.client_address[0]}] {fmt % args}")
+
+    def _send_json(self, data, code=200):
+        body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        # CORS: el admin panel viene de http://servidor:5000
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
+
+    def do_GET(self):
+        if self.path == "/status":
+            self._send_json({"online": True, "version": "browser-bridge"})
+        else:
+            self._send_json({"error": "Not found"}, 404)
+
+    def do_POST(self):
+        if self.path == "/ejecutar":
+            length = int(self.headers.get("Content-Length", 0))
+            try:
+                body = json.loads(self.rfile.read(length) or b"{}")
+            except Exception:
+                self._send_json({"ok": False, "error": "JSON inválido"}, 400)
+                return
+
+            codigo = str(body.get("codigo", "")).strip()
+            estado = str(body.get("estado", "gastado")).strip()
+
+            if not codigo:
+                self._send_json({"ok": False, "error": "codigo vacío"}, 400)
+                return
+
+            result = get_excel_instance()
+            if isinstance(result, tuple):
+                xl, err = result
+            else:
+                xl, err = result, None
+
+            if xl is None:
+                self._send_json({"ok": False, "error": err or "Excel no disponible"}, 503)
+                return
+
+            ok, err = ejecutar_baja_excel(xl, codigo, estado)
+            if ok:
+                self._send_json({"ok": True})
+            else:
+                self._send_json({"ok": False, "error": err or "Error desconocido"})
+        else:
+            self._send_json({"error": "Not found"}, 404)
+
+
+# ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    """
-    Llamado por agente_excel.ps1 para procesar UNA baja en Excel.
-    PowerShell gestiona el HTTP; aquí solo se automatiza Excel localmente.
-    """
-    parser = argparse.ArgumentParser(description="Automatización local Excel — una baja")
-    parser.add_argument("--codigo", required=True, help="Código del material")
-    parser.add_argument("--estado", default="gastado", help="Estado del material")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--puerto", type=int, default=PORT)
     args = parser.parse_args()
 
-    xl = get_excel_instance()
-    if xl is None:
+    # Verificar pywin32 al arrancar
+    try:
+        import win32com.client  # noqa
+    except ImportError:
+        print("[ERROR] pywin32 no está instalado.")
+        print("        Ejecuta INSTALAR_AGENTE.bat primero.")
+        input("Pulsa Enter para salir...")
         sys.exit(1)
 
-    ok = ejecutar_baja_excel(xl, args.codigo, args.estado)
-    sys.exit(0 if ok else 1)
+    server = HTTPServer(("127.0.0.1", args.puerto), AgenteHandler)
+
+    print()
+    print("=" * 60)
+    print(f"  Agente Bajas Excel — escuchando en localhost:{args.puerto}")
+    print("  El navegador (admin panel) se conecta a este puerto.")
+    print("  Abre el Excel con las macros ANTES de enviar bajas.")
+    print("  Pulsa Ctrl+C para detener.")
+    print("=" * 60)
+    print()
+
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\n  Agente detenido.")
 
 
 if __name__ == "__main__":
     main()
+

@@ -2212,6 +2212,13 @@ hr.div{border:none;border-top:1px solid #f1f5f9;margin:16px 0}
       <button id="btn-enviar-agente" onclick="enviarAlAgente()" class="btn btn-info btn-full btn-sm">📡 Enviar al PC cliente</button>
       <button id="btn-cancelar-agente" onclick="cancelarSolicitudAgente()" class="btn btn-ghost btn-full btn-sm" style="display:none;font-size:11px">✖ Cancelar solicitud</button>
       <pre id="agente-output" style="display:none;margin-top:6px;background:#f1f5f9;border-radius:6px;padding:8px;font-size:11px;max-height:100px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;color:#1e293b"></pre>
+      <hr style="border:none;border-top:1px solid #e2e8f0;margin:4px 0">
+      <div style="display:flex;align-items:center;gap:5px">
+        <span id="agente-local-badge" style="flex-shrink:0;display:inline-block;width:8px;height:8px;border-radius:50%;background:#94a3b8"></span>
+        <span id="agente-local-texto" style="font-size:10px;color:#64748b">Agente local no detectado</span>
+      </div>
+      <button id="btn-agente-local" onclick="procesarEnEstePC()" class="btn btn-success btn-full btn-sm" disabled>💻 Procesar en este PC</button>
+      <pre id="agente-local-output" style="display:none;margin-top:6px;background:#f1f5f9;border-radius:6px;padding:8px;font-size:11px;max-height:120px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;color:#1e293b"></pre>
     </div>
     <div class="tile" style="border-top-color:#8b5cf6">
       <div class="tile-title">🛠️ Configurar Agente</div>
@@ -2751,7 +2758,9 @@ document.addEventListener('DOMContentLoaded', function() {
   cargarPendientesExcel();
   cargarEstadoAgente();
   inicializarSeccionAgente();
+  verificarAgenteLocal();
   setInterval(cargarEstadoAgente, 8000);
+  setInterval(verificarAgenteLocal, 5000);
   setInterval(() => {
     // Sincronizar badge de la sección setup con el estado real del agente
     const badgeTile = document.getElementById('agente-badge');
@@ -2942,6 +2951,76 @@ async function ejecutarBajasExcel() {
     btn.textContent = '❌ Error — Reintentar';
     btn.disabled = false;
   }
+}
+
+// ── Modo Local (browser bridge) ──────────────────────────────
+async function verificarAgenteLocal() {
+  let online = false;
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 1200);
+    const r = await fetch('http://127.0.0.1:8765/status', {signal: ctrl.signal});
+    clearTimeout(tid);
+    const d = await r.json();
+    online = d.online === true;
+  } catch { online = false; }
+  const badge = document.getElementById('agente-local-badge');
+  const texto = document.getElementById('agente-local-texto');
+  const btn   = document.getElementById('btn-agente-local');
+  if (badge) badge.style.background = online ? '#22c55e' : '#94a3b8';
+  if (texto) texto.textContent = online ? 'Agente local activo (localhost:8765)' : 'Agente local no detectado';
+  if (btn)   btn.disabled = !online;
+}
+
+async function procesarEnEstePC() {
+  const output = document.getElementById('agente-local-output');
+  const btn    = document.getElementById('btn-agente-local');
+  output.style.display = 'block';
+  output.textContent   = 'Consultando pendientes…\\n';
+  btn.disabled = true;
+  let pendientes = [];
+  try {
+    const r = await fetch('/api/bajas_pendientes_excel');
+    const d = await r.json();
+    pendientes = d.pendientes || [];
+  } catch(e) {
+    output.textContent += '❌ Error al obtener pendientes: ' + e.message;
+    btn.disabled = false; return;
+  }
+  if (pendientes.length === 0) {
+    output.textContent += 'Sin materiales pendientes.';
+    btn.disabled = false; return;
+  }
+  output.textContent += 'Procesando ' + pendientes.length + ' baja(s)…\\n';
+  let ok = 0, ko = 0;
+  for (const m of pendientes) {
+    output.textContent += '  ' + m.codigo + ' (' + m.estado + ')… ';
+    try {
+      const r2 = await fetch('http://127.0.0.1:8765/ejecutar', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({codigo: m.codigo, estado: m.estado})
+      });
+      const d2 = await r2.json();
+      if (d2.ok) {
+        await fetch('/api/local/marcar_baja/' + m.id, {method: 'POST'});
+        ok++;
+        output.textContent += '✓\\n';
+      } else {
+        ko++;
+        output.textContent += '✗ ' + (d2.error || 'error Excel') + '\\n';
+      }
+    } catch(e) {
+      ko++;
+      output.textContent += '✗ ' + e.message + '\\n';
+    }
+    output.scrollTop = output.scrollHeight;
+    await new Promise(res => setTimeout(res, 1500));
+  }
+  output.textContent += '\\n✅ ' + ok + ' OK  ❌ ' + ko + ' errores';
+  output.scrollTop = output.scrollHeight;
+  btn.disabled = false;
+  if (ok > 0) { cargarPendientesExcel(); cargarContadorBajas(); }
 }
 
 // ── Agente Cliente Excel ─────────────────────────────────
@@ -4902,6 +4981,27 @@ def api_agente_error():
                WHERE id=1""",
             (mensaje,)
         )
+    return jsonify({"success": True})
+
+@app.post("/api/local/marcar_baja/<int:mat_id>")
+def api_local_marcar_baja(mat_id):
+    """Marca una baja procesada desde el modo browser-bridge. Auth: cookie admin."""
+    if current_role() != "admin":
+        return jsonify({"success": False}), 403
+    _ensure_procesado_excel_col()
+    with get_db_materiales() as conn:
+        row = conn.execute(
+            "SELECT codigo, descripcion, estado, operario_numero FROM materiales WHERE id=?",
+            (mat_id,)
+        ).fetchone()
+        if not row:
+            return jsonify({"success": False, "mensaje": "Material no encontrado"}), 404
+        conn.execute(
+            """INSERT INTO bajas (codigo, descripcion, estado_original, operario_numero, fecha_baja)
+               VALUES (?, ?, ?, ?, datetime('now','localtime'))""",
+            (row[0], row[1], row[2], row[3])
+        )
+        conn.execute("DELETE FROM materiales WHERE id=?", (mat_id,))
     return jsonify({"success": True})
 
 # ================== Descarga de archivos del agente ==================

@@ -6,7 +6,7 @@ echo   Agente Bajas Excel
 echo ============================================================
 echo.
 
-REM ── Buscar Python ─────────────────────────────────────────
+REM Buscar Python
 set PYTHON=
 python --version >nul 2>&1
 if not errorlevel 1 set PYTHON=python
@@ -27,7 +27,7 @@ echo  Python encontrado:
 %PYTHON% --version
 echo.
 
-REM ── Verificar pywin32 (necesario para automatizar Excel) ──
+REM Verificar pywin32
 %PYTHON% -c "import win32com.client" >nul 2>&1
 if errorlevel 1 (
     echo  [AVISO] Instalando pywin32...
@@ -37,21 +37,11 @@ if errorlevel 1 (
     echo.
 )
 
-REM ── Obtener ruta completa del ejecutable Python ───────────
-for /f "tokens=*" %%i in ('%PYTHON% -c "import sys; print(sys.executable)"') do set PYTHON_PATH=%%i
-
-echo  Iniciando agente (HTTP via PowerShell, Excel via Python)...
+echo  Iniciando agente local en localhost:8765...
+echo  Abre el admin panel en el navegador y usa "Procesar en este PC".
 echo  (Pulsa Ctrl+C para detener)
 echo.
-
-REM Pasar --config si fue el primer argumento
-set CONFIG_FLAG=
-if /i "%1"=="--config" set CONFIG_FLAG=-Config
-
-REM Cargar el PS1 como texto y ejecutarlo como ScriptBlock:
-REM usando -Command en lugar de -File se evita la politica de firma corporativa.
-REM Se pasa ScriptDir explicitamente porque $MyInvocation.MyCommand.Path queda vacio en ScriptBlock.
-powershell -NoProfile -Command "& ([ScriptBlock]::Create([System.IO.File]::ReadAllText('%~dp0agente_excel.ps1'))) -PythonPath '%PYTHON_PATH%' -ScriptDir '%~dp0' %CONFIG_FLAG%"
+%PYTHON% "%~dp0baja_excel_agente.py" %*
 
 echo.
 echo  El agente se ha detenido.

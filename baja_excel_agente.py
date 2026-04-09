@@ -170,8 +170,10 @@ def _hilo_semi_auto(codigo, parar_event):
 
         shell.SendKeys("{TAB}{TAB}", 0)
         time.sleep(0.15)
+        shell.SendKeys("^a", 0)        # limpiar campo por si tiene texto previo
+        time.sleep(0.1)
         shell.SendKeys(str(codigo), 0)
-        time.sleep(0.15)
+        time.sleep(0.2)
         shell.SendKeys("{TAB}{ENTER}", 0)
 
         CLASES_MAIN = {'XLMAIN', 'XLDESK', 'EXCEL7'}
@@ -253,8 +255,6 @@ def ejecutar_baja_excel(xl, codigo, estado):
 
     hilo_semi = threading.Thread(target=_hilo_semi_auto, args=(codigo, parar), daemon=True)
     hilo_semi.start()
-    t = threading.Thread(target=_enviar_secuencia, daemon=True)
-    t.start()
 
     try:
         xl.Application.Run("DAR_DE_BAJA")

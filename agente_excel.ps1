@@ -11,11 +11,6 @@ param(
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $ErrorActionPreference = "SilentlyContinue"
 
-# En PCs de empresa, WinHTTP tiene proxy corporativo que bloquea IPs de red local.
-# El navegador usa WinINet (proxy diferente, con bypass para LAN).
-# Anulamos el proxy para esta sesion para que Invoke-RestMethod llegue directamente.
-[System.Net.WebRequest]::DefaultWebProxy = $null
-
 # Al ejecutar como ScriptBlock, $MyInvocation.MyCommand.Path queda vacio.
 # El BAT pasa -ScriptDir explicitamente para evitar este problema.
 if (-not $ScriptDir) {
@@ -67,17 +62,24 @@ function Read-AgentConfig {
     return (Get-AgentConfig)
 }
 
-# ── HTTP helpers ───────────────────────────────────────────────────────────────
+# ── HTTP helpers (curl.exe --noproxy para evitar proxy corporativo) ───────────
+# Invoke-RestMethod usa WinHTTP que en PCs de empresa bloquea IPs locales.
+# curl.exe (incluido en Windows 10/11) con --noproxy '*' bypasea todo proxy.
 
 function Invoke-AgentGet($url, $token) {
-    $hdrs = @{ Authorization = "Bearer $token" }
-    return Invoke-RestMethod -Uri $url -Headers $hdrs -Method Get -TimeoutSec 10
+    $out = & curl.exe -s --noproxy "*" -H "Authorization: Bearer $token" --max-time 10 $url 2>&1
+    if ($LASTEXITCODE -ne 0) { throw "curl error $LASTEXITCODE: $out" }
+    return $out | ConvertFrom-Json
 }
 
 function Invoke-AgentPost($url, $token, $body = @{}) {
-    $hdrs = @{ Authorization = "Bearer $token"; "Content-Type" = "application/json" }
-    $json = $body | ConvertTo-Json -Compress
-    return Invoke-RestMethod -Uri $url -Headers $hdrs -Method Post -Body $json -TimeoutSec 10
+    $json = ($body | ConvertTo-Json -Compress)
+    $out  = & curl.exe -s --noproxy "*" -X POST `
+                -H "Authorization: Bearer $token" `
+                -H "Content-Type: application/json" `
+                -d $json --max-time 10 $url 2>&1
+    if ($LASTEXITCODE -ne 0) { throw "curl error $LASTEXITCODE: $out" }
+    return $out | ConvertFrom-Json
 }
 
 # ── Inicio ─────────────────────────────────────────────────────────────────────
@@ -89,6 +91,13 @@ if ($Config -or -not $cfg -or -not $cfg.server_url -or -not $cfg.token) {
 
 $srv   = $cfg.server_url
 $token = $cfg.token
+
+# Verificar que curl.exe esta disponible (viene con Windows 10/11)
+if (-not (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
+    Write-Host "  [ERROR] curl.exe no encontrado. Requiere Windows 10 v1803 o superior."
+    Read-Host "  Pulsa Enter para salir"
+    exit 1
+}
 
 Write-Host "  Verificando conexion con $srv ..."
 try {

@@ -68,7 +68,7 @@ function Read-AgentConfig {
 
 function Invoke-AgentGet($url, $token) {
     $out = & curl.exe -s --noproxy "*" -H "Authorization: Bearer $token" --max-time 10 $url 2>&1
-    if ($LASTEXITCODE -ne 0) { throw "curl error $LASTEXITCODE: $out" }
+    if ($LASTEXITCODE -ne 0) { throw "curl error ${LASTEXITCODE}: $out" }
     return $out | ConvertFrom-Json
 }
 
@@ -78,7 +78,7 @@ function Invoke-AgentPost($url, $token, $body = @{}) {
                 -H "Authorization: Bearer $token" `
                 -H "Content-Type: application/json" `
                 -d $json --max-time 10 $url 2>&1
-    if ($LASTEXITCODE -ne 0) { throw "curl error $LASTEXITCODE: $out" }
+    if ($LASTEXITCODE -ne 0) { throw "curl error ${LASTEXITCODE}: $out" }
     return $out | ConvertFrom-Json
 }
 

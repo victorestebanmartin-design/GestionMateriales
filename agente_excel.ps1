@@ -62,23 +62,29 @@ function Read-AgentConfig {
     return (Get-AgentConfig)
 }
 
-# ── HTTP helpers (curl.exe --noproxy para evitar proxy corporativo) ───────────
-# Invoke-RestMethod usa WinHTTP que en PCs de empresa bloquea IPs locales.
-# curl.exe (incluido en Windows 10/11) con --noproxy '*' bypasea todo proxy.
+# ── HTTP helpers (Msxml2.XMLHTTP — usa WinINet, mismo stack que el navegador) ─
+# curl.exe y Invoke-RestMethod usan WinHTTP/directo, bloqueados por EDR corporativo.
+# Msxml2.XMLHTTP es un COM object del sistema, siempre permitido.
 
 function Invoke-AgentGet($url, $token) {
-    $out = & curl.exe -s --noproxy "*" -H "Authorization: Bearer $token" --max-time 10 $url 2>&1
-    if ($LASTEXITCODE -ne 0) { throw "curl error ${LASTEXITCODE}: $out" }
-    return $out | ConvertFrom-Json
+    $http = New-Object -ComObject "Msxml2.XMLHTTP"
+    $http.open("GET", $url, $false)
+    $http.setRequestHeader("Authorization", "Bearer $token")
+    $http.send()
+    if ($http.status -eq 0) { throw "Sin respuesta del servidor (status 0)" }
+    return $http.responseText | ConvertFrom-Json
 }
 
 function Invoke-AgentPost($url, $token, $body = @{}) {
     $json = ($body | ConvertTo-Json -Compress)
-    $out  = & curl.exe -s --noproxy "*" -X POST `
-                -H "Authorization: Bearer $token" `
-                -H "Content-Type: application/json" `
-                -d $json --max-time 10 $url 2>&1
-    if ($LASTEXITCODE -ne 0) { throw "curl error ${LASTEXITCODE}: $out" }
+    $http = New-Object -ComObject "Msxml2.XMLHTTP"
+    $http.open("POST", $url, $false)
+    $http.setRequestHeader("Authorization", "Bearer $token")
+    $http.setRequestHeader("Content-Type", "application/json")
+    $http.send($json)
+    if ($http.status -eq 0) { throw "Sin respuesta del servidor (status 0)" }
+    return $http.responseText | ConvertFrom-Json
+}
     return $out | ConvertFrom-Json
 }
 
@@ -91,13 +97,6 @@ if ($Config -or -not $cfg -or -not $cfg.server_url -or -not $cfg.token) {
 
 $srv   = $cfg.server_url
 $token = $cfg.token
-
-# Verificar que curl.exe esta disponible (viene con Windows 10/11)
-if (-not (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
-    Write-Host "  [ERROR] curl.exe no encontrado. Requiere Windows 10 v1803 o superior."
-    Read-Host "  Pulsa Enter para salir"
-    exit 1
-}
 
 Write-Host "  Verificando conexion con $srv ..."
 try {

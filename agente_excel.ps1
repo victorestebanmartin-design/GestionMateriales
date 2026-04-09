@@ -11,6 +11,11 @@ param(
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $ErrorActionPreference = "SilentlyContinue"
 
+# En PCs de empresa, WinHTTP tiene proxy corporativo que bloquea IPs de red local.
+# El navegador usa WinINet (proxy diferente, con bypass para LAN).
+# Anulamos el proxy para esta sesion para que Invoke-RestMethod llegue directamente.
+[System.Net.WebRequest]::DefaultWebProxy = $null
+
 # Al ejecutar como ScriptBlock, $MyInvocation.MyCommand.Path queda vacio.
 # El BAT pasa -ScriptDir explicitamente para evitar este problema.
 if (-not $ScriptDir) {

@@ -2975,8 +2975,10 @@ async function verificarAgenteLocal() {
 async function procesarEnEstePC() {
   const output = document.getElementById('agente-local-output');
   const btn    = document.getElementById('btn-agente-local');
+
+  // ── Paso 0: obtener pendientes antes del aviso ──────────────────
   output.style.display = 'block';
-  output.textContent   = 'Consultando pendientes…\\n';
+  output.textContent   = 'Consultando pendientes…';
   btn.disabled = true;
   let pendientes = [];
   try {
@@ -2984,14 +2986,35 @@ async function procesarEnEstePC() {
     const d = await r.json();
     pendientes = d.pendientes || [];
   } catch(e) {
-    output.textContent += '❌ Error al obtener pendientes: ' + e.message;
+    output.textContent = '❌ Error al obtener pendientes: ' + e.message;
     btn.disabled = false; return;
   }
   if (pendientes.length === 0) {
-    output.textContent += 'Sin materiales pendientes.';
+    output.textContent = 'Sin materiales pendientes.';
     btn.disabled = false; return;
   }
-  output.textContent += 'Procesando ' + pendientes.length + ' baja(s)…\\n';
+
+  // ── Paso 1: aviso + confirmación ────────────────────────────────
+  const confirmado = confirm(
+    '⚠️  PROCESO DE BAJAS EN EXCEL\n\n' +
+    'Se van a procesar ' + pendientes.length + ' baja(s).\n\n' +
+    'ANTES DE CONTINUAR:\n' +
+    '  1. Asegúrate de que el Excel con la macro DAR_DE_BAJA está abierto.\n' +
+    '  2. Pon la ventana de Excel en primer plano.\n' +
+    '  3. NO muevas el ratón ni uses el teclado hasta que\n' +
+    '     aparezca el mensaje de finalización.\n\n' +
+    '¿Continuar?'
+  );
+  if (!confirmado) { btn.disabled = false; output.style.display = 'none'; return; }
+
+  // ── Paso 2: cuenta atrás ────────────────────────────────────────
+  for (let i = 5; i >= 1; i--) {
+    output.textContent = '⏳ Iniciando en ' + i + '… — Pon Excel en primer plano y NO toques nada.';
+    await new Promise(res => setTimeout(res, 1000));
+  }
+
+  // ── Paso 3: procesar ───────────────────────────────────────────
+  output.textContent = 'Procesando ' + pendientes.length + ' baja(s)…\n';
   let ok = 0, ko = 0;
   for (const m of pendientes) {
     output.textContent += '  ' + m.codigo + ' (' + m.estado + ')… ';
@@ -3005,19 +3028,23 @@ async function procesarEnEstePC() {
       if (d2.ok) {
         await fetch('/api/local/marcar_baja/' + m.id, {method: 'POST'});
         ok++;
-        output.textContent += '✓\\n';
+        output.textContent += '✓\n';
       } else {
         ko++;
-        output.textContent += '✗ ' + (d2.error || 'error Excel') + '\\n';
+        output.textContent += '✗ ' + (d2.error || 'error Excel') + '\n';
       }
     } catch(e) {
       ko++;
-      output.textContent += '✗ ' + e.message + '\\n';
+      output.textContent += '✗ ' + e.message + '\n';
     }
     output.scrollTop = output.scrollHeight;
     await new Promise(res => setTimeout(res, 1500));
   }
-  output.textContent += '\\n✅ ' + ok + ' OK  ❌ ' + ko + ' errores';
+
+  // ── Paso 4: finalización ────────────────────────────────────────
+  const resumen = (ok > 0 ? '✅ ' + ok + ' procesada(s) correctamente' : '') +
+                  (ko > 0 ? '\n❌ ' + ko + ' con error' : '');
+  output.textContent += '\n' + resumen + '\n\n✔ Proceso finalizado — ya puedes usar el ratón.';
   output.scrollTop = output.scrollHeight;
   btn.disabled = false;
   if (ok > 0) { cargarPendientesExcel(); cargarContadorBajas(); }

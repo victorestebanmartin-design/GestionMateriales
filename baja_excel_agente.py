@@ -287,7 +287,10 @@ class AgenteHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.wfile.write(body)
+        except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
+            pass  # AbortController del navegador cortó la conexión — ignorar
 
     def do_OPTIONS(self):
         self.send_response(200)

@@ -38,6 +38,12 @@ if errorlevel 1 (
 )
 
 echo  Iniciando agente local en localhost:8765...
+echo.
+echo  IMPORTANTE: antes de enviar bajas desde el panel admin:
+echo    1. Abre el archivo Excel con las macros habilitadas
+echo    2. NO ejecutes la macro manualmente - el agente la lanza solo
+echo    3. Deja Excel en segundo plano (no cierres ni interactues)
+echo.
 echo  Abre el admin panel en el navegador y usa "Procesar en este PC".
 echo  (Pulsa Ctrl+C para detener)
 echo.

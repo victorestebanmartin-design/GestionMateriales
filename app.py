@@ -3117,7 +3117,7 @@ function _detenerPollingAgente() {
 
 async function enviarAlAgente() {
   const desc = document.getElementById('count-pendientes-excel').textContent;
-  if (!confirm(`¿Enviar solicitud al agente cliente?\n\n${desc}\n\nEl script baja_excel_agente.py debe estar corriendo en el PC que tiene Excel abierto.`)) return;
+  if (!confirm(`¿Enviar solicitud al agente cliente?\n\n${desc}\n\nRequisitos en el PC cliente:\n• Excel abierto con macros habilitadas\n• La macro NO debe estar ejecutada manualmente (el agente la lanza solo)\n• AGENTE_EXCEL.bat corriendo en consola`)) return;
   try {
     const r = await fetch('/api/admin/solicitar_bajas_cliente', { method: 'POST' });
     const d = await r.json();
@@ -3210,10 +3210,14 @@ async function cancelarSolicitudAgente() {
       <div style="font-weight:700;color:#6b21a8;margin-bottom:6px">③ Arrancar el agente</div>
       <ol style="font-size:12px;color:#7e22ce;margin:0 0 8px;padding-left:18px;line-height:1.8">
         <li>Abre el Excel compartido con las <strong>macros habilitadas</strong></li>
+        <li>⚠️ <strong>NO ejecutes la macro manualmente</strong> — el agente la lanza él solo cuando recibe la orden</li>
         <li>Doble clic en <strong>AGENTE_EXCEL.bat</strong></li>
         <li>La primera vez te pide la <strong>IP del servidor</strong> y la <strong>contraseña admin</strong></li>
         <li>Se queda en espera — ya no hace falta repetir este paso hasta cerrar la ventana</li>
       </ol>
+      <div style="background:#fce7f3;border-radius:6px;padding:8px;font-size:11px;color:#9d174d;margin-bottom:6px">
+        ❌ Si ejecutas la macro antes de que el agente la llame, el proceso fallará
+      </div>
       <div style="background:#f3e8ff;border-radius:6px;padding:8px;font-size:11px;color:#6b21a8">
         💡 IP del servidor: <strong id="ip-servidor-texto">cargando…</strong>
       </div>
@@ -3228,7 +3232,7 @@ async function cancelarSolicitudAgente() {
         <li>El historial se actualiza solo en <strong>"✅ Dados de Baja"</strong></li>
       </ol>
       <div style="background:#ffedd5;border-radius:6px;padding:8px;font-size:11px;color:#9a3412">
-        ⚠️ El Excel debe estar abierto y visible en el PC cliente mientras se procesa
+        ⚠️ El Excel debe estar abierto con macros habilitadas, pero <strong>sin ejecutar ninguna macro manualmente</strong> — el agente se encarga de lanzarlas
       </div>
     </div>
 
